@@ -21,54 +21,52 @@
     <!-- Stylesheets -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
-
+    
     <style>
         :root {
             --primary-color: #16526e;
-            --primary-light: rgba(22, 82, 110, 0.2);
+            --primary-light: rgba(22, 82, 110, 0.1);
             --success-color: #10b981;
-            --success-light: rgba(16, 185, 129, 0.2);
+            --success-light: rgba(16, 185, 129, 0.1);
             --warning-color: #f59e0b;
-            --warning-light: rgba(245, 158, 11, 0.2);
+            --warning-light: rgba(245, 158, 11, 0.1);
             --danger-color: #ef4444;
-            --danger-light: rgba(239, 68, 68, 0.2);
-            --text-dark: #e2e8f0;
-            --text-light: #94a3b8;
-            --bg-dark: #0f172a;
-            --bg-card: #1e293b;
-            --border-color: #334155;
+            --danger-light: rgba(239, 68, 68, 0.1);
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --bg-light: #f8fafc;
+            --border-color: #e2e8f0;
         }
-
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Nunito Sans', sans-serif;
-            background-color: var(--bg-dark);
+            background-color: #f1f5f9;
             color: var(--text-dark);
         }
-
+        
         /* Layout */
         .app-container {
             display: flex;
             min-height: 100vh;
         }
-
+        
         /* Sidebar */
         .sidebar {
             width: 250px;
-            background-color: var(--bg-card);
+            background-color: white;
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
         }
-
+        
         .sidebar-logo {
             padding: 1.5rem;
             display: flex;
@@ -76,24 +74,24 @@
             justify-content: center;
             border-bottom: 1px solid var(--border-color);
         }
-
+        
         .sidebar-logo img {
             height: 40px;
         }
-
+        
         .sidebar-menu {
             flex: 1;
             padding: 1rem 0;
         }
-
+        
         .sidebar-menu ul {
             list-style: none;
         }
-
+        
         .sidebar-menu li {
             margin-bottom: 0.25rem;
         }
-
+        
         .sidebar-menu a {
             display: flex;
             align-items: center;
@@ -102,28 +100,25 @@
             text-decoration: none;
             font-weight: 500;
             transition: all 0.2s;
-            border-radius: 0.25rem;
-            margin: 0 0.5rem;
         }
-
-        .sidebar-menu a:hover,
-        .sidebar-menu a.active {
+        
+        .sidebar-menu a:hover, .sidebar-menu a.active {
             background-color: var(--primary-light);
             color: var(--primary-color);
         }
-
+        
         .sidebar-menu i {
             margin-right: 0.75rem;
             font-size: 1.25rem;
         }
-
+        
         .sidebar-footer {
             padding: 1rem 1.5rem;
             border-top: 1px solid var(--border-color);
             display: flex;
             align-items: center;
         }
-
+        
         .sidebar-footer .avatar {
             width: 2.5rem;
             height: 2.5rem;
@@ -136,46 +131,46 @@
             font-weight: bold;
             margin-right: 0.75rem;
         }
-
+        
         .sidebar-footer .user-info {
             flex: 1;
         }
-
+        
         .sidebar-footer .user-name {
             font-weight: 600;
             font-size: 0.875rem;
         }
-
+        
         .sidebar-footer .user-role {
             font-size: 0.75rem;
             color: var(--text-light);
         }
-
+        
         /* Main Content */
         .main-content {
             flex: 1;
             padding: 1.5rem;
             overflow-y: auto;
         }
-
+        
         .header {
             display: flex;
             align-items: center;
             justify-content: flex-end;
             margin-bottom: 1.5rem;
         }
-
+        
         .header-welcome {
             margin-right: auto;
             font-size: 0.875rem;
             color: var(--text-light);
         }
-
+        
         .header-actions {
             display: flex;
             align-items: center;
         }
-
+        
         .header-actions .btn-icon {
             width: 2.5rem;
             height: 2.5rem;
@@ -183,19 +178,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: var(--bg-card);
+            background-color: white;
             color: var(--text-dark);
             border: 1px solid var(--border-color);
             margin-left: 0.5rem;
             cursor: pointer;
             transition: all 0.2s;
         }
-
+        
         .header-actions .btn-icon:hover {
             background-color: var(--primary-light);
             color: var(--primary-color);
         }
-
+        
         /* Stats Cards */
         .stats-grid {
             display: grid;
@@ -203,17 +198,16 @@
             gap: 1.5rem;
             margin-bottom: 1.5rem;
         }
-
+        
         .stat-card {
-            background-color: var(--bg-card);
+            background-color: white;
             border-radius: 0.5rem;
             padding: 1.5rem;
             display: flex;
             align-items: center;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-
+        
         .stat-icon {
             width: 3rem;
             height: 3rem;
@@ -224,89 +218,87 @@
             margin-right: 1rem;
             font-size: 1.5rem;
         }
-
+        
         .stat-primary {
             background-color: var(--primary-light);
             color: var(--primary-color);
         }
-
+        
         .stat-success {
             background-color: var(--success-light);
             color: var(--success-color);
         }
-
+        
         .stat-warning {
             background-color: var(--warning-light);
             color: var(--warning-color);
         }
-
+        
         .stat-danger {
             background-color: var(--danger-light);
             color: var(--danger-color);
         }
-
+        
         .stat-info {
             flex: 1;
         }
-
+        
         .stat-label {
             font-size: 0.75rem;
             color: var(--text-light);
             margin-bottom: 0.25rem;
         }
-
+        
         .stat-value {
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--text-dark);
         }
-
+        
         /* Chart and Activity */
         .dashboard-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 1.5rem;
         }
-
-        .chart-card,
-        .activity-card {
-            background-color: var(--bg-card);
+        
+        .chart-card, .activity-card {
+            background-color: white;
             border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             overflow: hidden;
-            border: 1px solid var(--border-color);
         }
-
+        
         .card-header {
             padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border-color);
             font-weight: 600;
         }
-
+        
         .card-body {
             padding: 1.5rem;
         }
-
+        
         .chart-container {
             height: 300px;
         }
-
+        
         /* Activity Feed */
         .activity-list {
             list-style: none;
         }
-
+        
         .activity-item {
             display: flex;
             align-items: flex-start;
             padding: 1rem 0;
             border-bottom: 1px solid var(--border-color);
         }
-
+        
         .activity-item:last-child {
             border-bottom: none;
         }
-
+        
         .activity-icon {
             width: 2.5rem;
             height: 2.5rem;
@@ -317,38 +309,38 @@
             margin-right: 1rem;
             font-size: 1.25rem;
         }
-
+        
         .activity-content {
             flex: 1;
         }
-
+        
         .activity-title {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-
+        
         .activity-subtitle {
             font-size: 0.875rem;
             color: var(--text-light);
             margin-bottom: 0.25rem;
         }
-
+        
         .activity-time {
             font-size: 0.75rem;
             color: var(--text-light);
         }
-
+        
         /* Responsive */
         @media (max-width: 992px) {
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
-
+            
             .dashboard-grid {
                 grid-template-columns: 1fr;
             }
         }
-
+        
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -358,11 +350,11 @@
                 z-index: 1000;
                 transition: all 0.3s;
             }
-
+            
             .sidebar.show {
                 left: 0;
             }
-
+            
             .sidebar-overlay {
                 display: none;
                 position: fixed;
@@ -370,15 +362,15 @@
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background-color: rgba(0, 0, 0, 0.5);
+                background-color: rgba(0,0,0,0.5);
                 z-index: 999;
             }
-
+            
             .sidebar-overlay.show {
                 display: block;
             }
         }
-
+        
         @media (max-width: 576px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -417,124 +409,19 @@
                     <div class="user-name">{{ user_full_name }}</div>
                     <div class="user-role">{{ user_role }}</div>
                 </div>
-                <a href="/logout" class="logout-btn" title="Logout">
-                    <i class="uil uil-signout"></i>
-                </a>
             </div>
-
-            <style>
-                .logout-btn {
-                    color: var(--text-light);
-                    font-size: 1.25rem;
-                    transition: all 0.2s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 2rem;
-                    height: 2rem;
-                    border-radius: 50%;
-                }
-
-                .logout-btn:hover {
-                    color: var(--danger-color);
-                    background-color: var(--danger-light);
-                }
-            </style>
         </div>
-
+        
         <!-- Main Content -->
         <div class="main-content">
             <div class="header">
                 <div class="header-welcome">Welcome back, {{ user_first_name }}!</div>
                 <div class="header-actions">
                     <button class="btn-icon"><i class="uil uil-bell"></i></button>
-                    <div class="user-dropdown">
-                        <button class="btn-icon" id="userDropdownBtn"><i class="uil uil-user"></i></button>
-                        <div class="dropdown-menu" id="userDropdownMenu">
-                            <a href="/on-desk/profile"><i class="uil uil-user"></i> Profile</a>
-                            <a href="/on-desk/settings"><i class="uil uil-setting"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a href="/logout" class="text-danger"><i class="uil uil-signout"></i> Logout</a>
-                        </div>
-                    </div>
+                    <button class="btn-icon"><i class="uil uil-user"></i></button>
                 </div>
-
-                <style>
-                    .user-dropdown {
-                        position: relative;
-                    }
-
-                    .dropdown-menu {
-                        position: absolute;
-                        top: 100%;
-                        right: 0;
-                        background-color: var(--bg-card);
-                        border: 1px solid var(--border-color);
-                        border-radius: 0.5rem;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                        min-width: 180px;
-                        z-index: 1000;
-                        display: none;
-                        margin-top: 0.5rem;
-                        overflow: hidden;
-                    }
-
-                    .dropdown-menu.show {
-                        display: block;
-                    }
-
-                    .dropdown-menu a {
-                        display: flex;
-                        align-items: center;
-                        padding: 0.75rem 1rem;
-                        color: var(--text-dark);
-                        text-decoration: none;
-                        transition: all 0.2s;
-                    }
-
-                    .dropdown-menu a:hover {
-                        background-color: var(--primary-light);
-                    }
-
-                    .dropdown-menu a i {
-                        margin-right: 0.5rem;
-                        font-size: 1.1rem;
-                    }
-
-                    .dropdown-divider {
-                        height: 1px;
-                        background-color: var(--border-color);
-                        margin: 0.25rem 0;
-                    }
-
-                    .text-danger {
-                        color: var(--danger-color) !important;
-                    }
-
-                    .text-danger:hover {
-                        background-color: var(--danger-light) !important;
-                    }
-                </style>
-
-                <script>
-                    document.addEventListener('DOMContentLoaded', function () {
-                        const userDropdownBtn = document.getElementById('userDropdownBtn');
-                        const userDropdownMenu = document.getElementById('userDropdownMenu');
-
-                        userDropdownBtn.addEventListener('click', function (e) {
-                            e.stopPropagation();
-                            userDropdownMenu.classList.toggle('show');
-                        });
-
-                        document.addEventListener('click', function (e) {
-                            if (!userDropdownBtn.contains(e.target) && !userDropdownMenu.contains(e.target)) {
-                                userDropdownMenu.classList.remove('show');
-                            }
-                        });
-                    });
-                </script>
             </div>
-
+            
             <!-- Stats Cards -->
             <div class="stats-grid">
                 <div class="stat-card">
@@ -574,7 +461,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <!-- Chart and Activity -->
             <div class="dashboard-grid">
                 <div class="chart-card">
@@ -601,7 +488,7 @@
                                 </div>
                             </li>
                             {% endfor %}
-
+                            
                             {% if not activities %}
                             <li class="activity-item">
                                 <div class="activity-content text-center">
@@ -615,11 +502,11 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             // Initialize Chart
             const ctx = document.getElementById('ticketChart').getContext('2d');
             const ticketChart = new Chart(ctx, {
@@ -651,40 +538,23 @@
                     plugins: {
                         legend: {
                             position: 'top',
-                            labels: {
-                                color: '#e2e8f0'
-                            }
                         }
                     },
                     scales: {
                         y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#94a3b8'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#94a3b8'
-                            }
+                            beginAtZero: true
                         }
                     }
                 }
             });
-
+            
             // Mobile Sidebar Toggle
             const toggleSidebar = () => {
                 const sidebar = document.querySelector('.sidebar');
                 const overlay = document.querySelector('.sidebar-overlay');
-
+                
                 sidebar.classList.toggle('show');
-
+                
                 if (!overlay) {
                     const newOverlay = document.createElement('div');
                     newOverlay.classList.add('sidebar-overlay');
@@ -695,7 +565,7 @@
                     overlay.classList.toggle('show');
                 }
             };
-
+            
             // Add mobile menu button if needed
             if (window.innerWidth <= 768) {
                 const header = document.querySelector('.header');
@@ -704,7 +574,7 @@
                 menuBtn.innerHTML = '<i class="uil uil-bars"></i>';
                 menuBtn.style.marginRight = 'auto';
                 menuBtn.addEventListener('click', toggleSidebar);
-
+                
                 header.insertBefore(menuBtn, header.firstChild);
             }
         });
