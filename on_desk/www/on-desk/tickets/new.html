@@ -5,16 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title }} | {{ app_name }}</title>
-    
+
     {% include "www/on-desk/includes/head.html" %}
-    
+
     {% block page_css %}
     <style>
         /* Create Ticket Page Styles */
         .ticket-form-container {
-            background-color: var(--bg-card);
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            background-color: #1e2a3a;
+            border-radius: 0.25rem;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
@@ -27,27 +26,46 @@
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 500;
-            color: var(--text-dark);
+            color: #a0aec0;
+            font-size: 0.875rem;
         }
 
         .form-control {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid var(--border-color);
+            border: 1px solid #2d3748;
             border-radius: 0.25rem;
-            background-color: var(--bg-input);
-            color: var(--text-dark);
+            background-color: #1a202c;
+            color: #e2e8f0;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
 
         .form-control:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px var(--primary-light);
+            border-color: #1e88a2;
+            box-shadow: none;
         }
 
         textarea.form-control {
             resize: vertical;
             min-height: 150px;
+        }
+
+        /* Custom select styling */
+        select.form-control {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a0aec0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+            padding-right: 2.5rem;
+        }
+
+        select.form-control:focus {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231e88a2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
         }
 
         .form-grid {
@@ -60,31 +78,36 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
+            padding: 0.5rem 1rem;
             border-radius: 0.25rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 0.875rem;
         }
 
         .btn-primary {
-            background-color: var(--primary-color);
+            background-color: #1e88a2;
             color: white;
             border: none;
         }
 
         .btn-primary:hover {
-            background-color: var(--primary-dark);
+            background-color: #176d83;
+        }
+
+        .btn-primary:active {
+            background-color: #145d70;
         }
 
         .btn-outline {
             background-color: transparent;
-            color: var(--text-dark);
-            border: 1px solid var(--border-color);
+            color: #a0aec0;
+            border: 1px solid #2d3748;
         }
 
         .btn-outline:hover {
-            background-color: var(--bg-hover);
+            background-color: rgba(45, 55, 72, 0.5);
         }
 
         .form-actions {
@@ -93,9 +116,16 @@
             gap: 1rem;
         }
 
+        .page-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+        }
+
         .required-field::after {
             content: "*";
-            color: var(--danger-color);
+            color: #e53e3e;
             margin-left: 0.25rem;
         }
 
@@ -108,12 +138,12 @@
     {% endblock %}
 </head>
 
-<body>
+<body style="background-color: #0f172a; color: #e2e8f0;">
     <div class="app-container">
         {% include "www/on-desk/includes/sidebar.html" %}
 
         <!-- Main Content -->
-        <div class="main-content">
+        <div class="main-content" style="background-color: #0f172a;">
             {% include "www/on-desk/includes/header.html" %}
 
             <!-- Page Header -->
@@ -199,7 +229,7 @@
             const ticketType = document.getElementById('ticket_type').value;
             const priority = document.getElementById('priority').value;
             const agentGroup = document.getElementById('agent_group').value;
-            
+
             // Validate required fields
             if (!subject || !description || !ticketType || !priority) {
                 frappe.show_alert({
@@ -208,7 +238,7 @@
                 });
                 return;
             }
-            
+
             // Prepare data object
             let data = {
                 subject: subject,
@@ -216,12 +246,12 @@
                 ticket_type: ticketType,
                 priority: priority
             };
-            
+
             // Add optional fields if they exist
             if (agentGroup) {
                 data.agent_group = agentGroup;
             }
-            
+
             {% if customers %}
             const customer = document.getElementById('customer').value;
             if (!customer) {
@@ -233,43 +263,43 @@
             }
             data.customer = customer;
             {% endif %}
-            
+
             // Disable the submit button
             const submitButton = document.querySelector('.btn-primary');
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="uil uil-spinner-alt"></i> Creating...';
-            
+
             // Submit the form
             frappe.call({
                 method: 'helpdesk.helpdesk.doctype.hd_ticket.api.create_ticket',
                 args: data,
-                callback: function(response) {
+                callback: function (response) {
                     if (response.message && response.message.name) {
                         frappe.show_alert({
                             message: 'Ticket created successfully',
                             indicator: 'green'
                         });
-                        
+
                         // Redirect to the ticket page
-                        setTimeout(function() {
+                        setTimeout(function () {
                             window.location.href = '/on-desk/tickets/' + response.message.name;
                         }, 1000);
                     } else {
                         // Re-enable the submit button
                         submitButton.disabled = false;
                         submitButton.innerHTML = '<i class="uil uil-save"></i> Create Ticket';
-                        
+
                         frappe.show_alert({
                             message: 'Failed to create ticket: ' + (response.exc_message || 'Unknown error'),
                             indicator: 'red'
                         });
                     }
                 },
-                error: function(err) {
+                error: function (err) {
                     // Re-enable the submit button
                     submitButton.disabled = false;
                     submitButton.innerHTML = '<i class="uil uil-save"></i> Create Ticket';
-                    
+
                     frappe.show_alert({
                         message: 'Failed to create ticket: ' + (err.message || 'Unknown error'),
                         indicator: 'red'
