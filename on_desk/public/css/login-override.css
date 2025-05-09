@@ -119,14 +119,14 @@ label,
 
 /* Buttons */
 .btn-primary {
-    background-color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
+    background-color: #16526e !important;
+    border-color: #16526e !important;
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
-    background-color: var(--primary-hover) !important;
-    border-color: var(--primary-hover) !important;
+    background-color: #1c6485 !important;
+    border-color: #1c6485 !important;
 }
 
 /* Links */
@@ -203,4 +203,24 @@ img[alt*="Frappe"],
 /* Force dark mode on all elements */
 * {
     color-scheme: dark !important;
+}
+
+/* Override Frappe login button */
+.page-card .btn-primary,
+.page-card .btn-primary:hover,
+.page-card .btn-primary:focus,
+.page-card .btn-primary:active,
+.page-card input[type="submit"],
+.page-card button[type="submit"] {
+    background-color: #16526e !important;
+    border-color: #16526e !important;
+}
+
+.page-card .btn-primary:hover,
+.page-card .btn-primary:focus,
+.page-card .btn-primary:active,
+.page-card input[type="submit"]:hover,
+.page-card button[type="submit"]:hover {
+    background-color: #1c6485 !important;
+    border-color: #1c6485 !important;
 }
