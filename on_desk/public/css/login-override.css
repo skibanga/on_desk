@@ -1,0 +1,206 @@
+/* On Desk Login Override Styles */
+
+:root {
+    --primary-color: #3b82f6;
+    --primary-hover: #60a5fa;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #06b6d4;
+    --dark-color: #111827;
+    --light-color: #1f2937;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text-color: #f9fafb;
+    --text-muted: #9ca3af;
+    --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    --box-shadow-hover: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Force dark mode on body */
+body {
+    background-color: var(--dark-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Override Frappe login page styles */
+body.page-login {
+    background-color: var(--dark-color) !important;
+}
+
+.page-card {
+    background-color: var(--light-color) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+.page-card .page-card-head {
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.page-card .page-card-head .indicator {
+    color: var(--text-color) !important;
+}
+
+.page-card-actions {
+    border-top: 1px solid var(--border-color) !important;
+}
+
+/* Hide Frappe logo but not On Desk logo */
+.page-card-head img[alt="Frappe"] {
+    display: none !important;
+}
+
+/* Ensure On Desk logo is visible */
+img[alt="On Desk"] {
+    display: inline-block !important;
+}
+
+/* Replace with On Desk text */
+.page-card-head:before {
+    content: 'On Desk';
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Hide welcome text */
+.page-card-head+p,
+.page-card-head+div,
+.page-card-head+h4,
+.page-card-head+h5,
+.page-card-head+h6 {
+    display: none !important;
+}
+
+/* Form controls */
+input,
+textarea,
+select,
+.form-control {
+    background-color: var(--light-color) !important;
+    color: var(--text-color) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.form-control:focus {
+    background-color: var(--light-color) !important;
+    color: var(--text-color) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Fix for autofill background color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--light-color) inset !important;
+    -webkit-text-fill-color: var(--text-color) !important;
+    transition: background-color 5000s ease-in-out 0s;
+    background-color: var(--light-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Labels and text */
+label,
+.page-card-head,
+.page-card-body,
+.page-card-actions {
+    color: var(--text-color) !important;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+}
+
+/* Links */
+a {
+    color: var(--primary-color) !important;
+}
+
+a:hover {
+    color: var(--primary-hover) !important;
+}
+
+/* Error messages */
+.invalid-feedback,
+.alert-danger {
+    color: var(--danger-color) !important;
+}
+
+/* Checkbox */
+.checkbox input[type="checkbox"] {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.checkbox input[type="checkbox"]:checked {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* Footer */
+.web-footer {
+    background-color: var(--dark-color) !important;
+    color: var(--text-muted) !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+.web-footer a {
+    color: var(--text-color) !important;
+}
+
+/* Additional overrides for Frappe specific elements */
+.for-login .page-card-head .indicator,
+.for-forgot .page-card-head .indicator {
+    display: none !important;
+}
+
+.for-login .page-card-head h4,
+.for-forgot .page-card-head h4 {
+    color: var(--text-color) !important;
+}
+
+/* Hide any Frappe branding */
+img[src*="frappe-logo"],
+img[src*="frappe_logo"],
+img[alt*="Frappe"],
+.navbar-brand:contains("Frappe") {
+    display: none !important;
+}
+
+/* Hide welcome messages */
+.page-card-head h4,
+.page-card-head h5,
+.page-card-head h6,
+.page-card p:contains("Welcome"),
+.page-card div:contains("Welcome"),
+.page-card span:contains("Welcome"),
+.page-card p:contains("Sign in"),
+.page-card div:contains("Sign in"),
+.page-card span:contains("Sign in"),
+.page-card p:contains("helpdesk"),
+.page-card div:contains("helpdesk"),
+.page-card span:contains("helpdesk") {
+    display: none !important;
+}
+
+/* Force dark mode on all elements */
+* {
+    color-scheme: dark !important;
+}

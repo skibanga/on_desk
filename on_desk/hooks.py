@@ -17,6 +17,7 @@ app_license = "mit"
 web_include_css = [
     "/assets/on_desk/css/theme.min.css",
     "/assets/on_desk/css/user.min.css",
+    "/assets/on_desk/css/login-override.css",
     "https://unicons.iconscout.com/release/v4.0.8/css/line.css",
 ]
 web_include_js = [

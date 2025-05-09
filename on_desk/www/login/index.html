@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-US" dir="ltr" data-navigation-type="default" data-navbar-horizontal-shape="default">
+<html lang="en-US" dir="ltr" data-navigation-type="default" data-navbar-horizontal-shape="default" class="dark-mode">
 
 <head>
     <meta charset="utf-8">
@@ -16,7 +16,7 @@
     <link rel="shortcut icon" type="image/x-icon" href="/assets/on_desk/img/favicons/favicon.ico">
     <link rel="manifest" href="/assets/on_desk/img/favicons/manifest.json">
     <meta name="msapplication-TileImage" content="/assets/on_desk/img/favicons/mstile-150x150.png">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#1f2937">
 
     <!-- Stylesheets -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,13 +29,34 @@
     <link href="/assets/on_desk/css/user.min.css" type="text/css" rel="stylesheet" id="user-style-default">
 
     <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-hover: #60a5fa;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+            --dark-color: #111827;
+            --light-color: #1f2937;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-color: #f9fafb;
+            --text-muted: #9ca3af;
+            --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            --box-shadow-hover: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            background-color: var(--dark-color);
+            color: var(--text-color);
+        }
+
         .login-bg-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.03);
+            background-color: rgba(0, 0, 0, 0.2);
             z-index: -1;
         }
 
@@ -96,9 +117,10 @@
 
         .login-card {
             border-radius: 1rem;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-            background-color: #ffffff;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            background-color: var(--light-color);
             padding: 2rem;
+            border: 1px solid var(--border-color);
         }
 
         .form-feedback {
@@ -109,11 +131,118 @@
 
         .is-invalid .form-feedback {
             display: block;
-            color: #dc3545;
+            color: #ef4444;
         }
 
         .is-invalid .form-control {
-            border-color: #dc3545;
+            border-color: #ef4444;
+        }
+
+        .form-control,
+        .form-select {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+        }
+
+        .form-control:focus,
+        .form-select:focus,
+        .form-control:active,
+        .form-select:active,
+        .form-control:hover,
+        .form-select:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-color);
+            color: var(--text-color);
+        }
+
+        /* Fix for autofill background color */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px var(--light-color) inset !important;
+            -webkit-text-fill-color: var(--text-color) !important;
+            transition: background-color 5000s ease-in-out 0s;
+            background-color: var(--light-color) !important;
+            color: var(--text-color) !important;
+        }
+
+        /* Additional fixes for input fields */
+        input,
+        textarea,
+        select {
+            background-color: var(--light-color) !important;
+            color: var(--text-color) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            background-color: var(--light-color) !important;
+            color: var(--text-color) !important;
+            border-color: var(--primary-color) !important;
+        }
+
+        /* Override any Frappe default styles */
+        .frappe-control input,
+        .frappe-control textarea,
+        .frappe-control select,
+        .form-control,
+        .control-input,
+        .input-with-feedback {
+            background-color: var(--light-color) !important;
+            color: var(--text-color) !important;
+        }
+
+        /* Override Frappe login page styles */
+        body.page-login {
+            background-color: var(--dark-color) !important;
+        }
+
+        .page-card {
+            background-color: var(--light-color) !important;
+            color: var(--text-color) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        .page-card .page-card-head {
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+
+        .page-card .page-card-head .indicator {
+            color: var(--text-color) !important;
+        }
+
+        .page-card-actions {
+            border-top: 1px solid var(--border-color) !important;
+        }
+
+        /* Hide Frappe logo */
+        .page-card-head img[alt="Frappe"] {
+            display: none !important;
+        }
+
+        /* Replace with On Desk text */
+        .page-card-head:before {
+            content: 'On Desk';
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .form-label {
+            color: var(--text-color);
+        }
+
+        .text-muted,
+        .text-body-tertiary {
+            color: var(--text-muted) !important;
+        }
+
+        .text-body-highlight {
+            color: white !important;
         }
 
         .login-btn {
@@ -140,37 +269,27 @@
 
         .login-footer {
             font-size: 0.875rem;
-            color: #6c757d;
+            color: var(--text-muted);
             text-align: center;
             margin-top: 2rem;
         }
 
         .login-footer a {
-            color: var(--bs-primary);
+            color: var(--primary-color);
             text-decoration: none;
         }
 
         .login-footer a:hover {
             text-decoration: underline;
+            color: var(--primary-hover);
         }
 
-        logout .language-selector {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
+        .language-selector {
+            display: none;
         }
 
         .theme-toggle {
-            position: absolute;
-            top: 1rem;
-            left: 1rem;
-            cursor: pointer;
-            font-size: 1.25rem;
-            color: #6c757d;
-        }
-
-        .theme-toggle:hover {
-            color: var(--bs-primary);
+            display: none;
         }
 
         @media (max-width: 576px) {
@@ -181,31 +300,12 @@
     </style>
 </head>
 
-<body>
+<body class="dark-mode">
     <!-- Background Patterns -->
     <div class="login-bg-pattern"></div>
     <div class="login-bg-overlay"></div>
 
-    <!-- Theme Toggle -->
-    <div class="theme-toggle">
-        <i class="uil uil-moon dark-mode-icon"></i>
-        <i class="uil uil-sun light-mode-icon d-none"></i>
-    </div>
-
-    <!-- Language Selector -->
-    <div class="language-selector dropdown">
-        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="languageDropdown"
-            data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="uil uil-globe me-1"></i> English
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-            <li><a class="dropdown-item active" href="#" data-lang="en">English</a></li>
-            <li><a class="dropdown-item" href="#" data-lang="es">Español</a></li>
-            <li><a class="dropdown-item" href="#" data-lang="fr">Français</a></li>
-            <li><a class="dropdown-item" href="#" data-lang="de">Deutsch</a></li>
-            <li><a class="dropdown-item" href="#" data-lang="pt">Português</a></li>
-        </ul>
-    </div>
+    <!-- Dark mode is always enabled -->
 
     <!-- Main Content -->
     <main class="main" id="top">
@@ -213,15 +313,8 @@
             <div class="row flex-center min-vh-100 py-5">
                 <div class="col-sm-10 col-md-8 col-lg-6 col-xl-5">
                     <div class="login-card">
-                        <a class="d-flex flex-center text-decoration-none mb-4" href="/">
-                            <div class="d-flex align-items-center fw-bolder fs-3 d-inline-block">
-                                <img src="{{ app_logo }}" alt="{{ app_name }}" width="58" />
-                                <span class="text-primary ms-2">{{ app_name }}</span>
-                            </div>
-                        </a>
-                        <div class="text-center mb-5">
-                            <h3 class="text-body-highlight">Welcome Back!</h3>
-                            <p class="text-body-tertiary">Sign in to your helpdesk account</p>
+                        <div class="text-center mb-4">
+                            <img src="/assets/on_desk/img/icons/logo1.png" alt="On Desk" width="300" class="mb-2" />
                         </div>
 
                         <!-- Social Login Buttons -->
@@ -302,7 +395,7 @@
 
                     <!-- Login Footer -->
                     <div class="login-footer mt-4">
-                        <p>© {{ frappe.utils.now_datetime().year }} {{ app_name }}. All rights reserved.</p>
+                        <p>© {{ now_year }} On Desk. All rights reserved.</p>
                         <div>
                             <a href="/privacy-policy" class="me-3">Privacy Policy</a>
                             <a href="/terms-of-service">Terms of Service</a>
@@ -334,9 +427,6 @@
             const loginError = document.getElementById('login-error');
             const errorMessage = document.getElementById('error-message');
             const rememberMe = document.getElementById('remember-me');
-            const themeToggle = document.querySelector('.theme-toggle');
-            const darkModeIcon = document.querySelector('.dark-mode-icon');
-            const lightModeIcon = document.querySelector('.light-mode-icon');
 
             // Check for saved email
             const savedEmail = localStorage.getItem('ondesk_email');
@@ -393,7 +483,7 @@
 
                 // Simulate API call with timeout
                 setTimeout(() => {
-                    // Use Frappe's login API and then redirect to our custom admin panel
+                    // Use On Desk's login API and then redirect to our custom admin panel
                     fetch('/api/method/login', {
                         method: 'POST',
                         headers: {
@@ -442,58 +532,8 @@
                 });
             }
 
-            // Theme toggle functionality
-            themeToggle.addEventListener('click', function () {
-                document.body.classList.toggle('dark-mode');
-                darkModeIcon.classList.toggle('d-none');
-                lightModeIcon.classList.toggle('d-none');
-
-                // Save preference
-                const isDarkMode = document.body.classList.contains('dark-mode');
-                localStorage.setItem('ondesk_dark_mode', isDarkMode ? 'true' : 'false');
-            });
-
-            // Check for saved theme preference
-            const savedTheme = localStorage.getItem('ondesk_dark_mode');
-            if (savedTheme === 'true') {
-                document.body.classList.add('dark-mode');
-                darkModeIcon.classList.add('d-none');
-                lightModeIcon.classList.remove('d-none');
-            }
-
-            // Language selector
-            const languageItems = document.querySelectorAll('[data-lang]');
-            languageItems.forEach(item => {
-                item.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const lang = this.getAttribute('data-lang');
-
-                    // Update active state
-                    languageItems.forEach(el => el.classList.remove('active'));
-                    this.classList.add('active');
-
-                    // Update dropdown text
-                    const languageText = this.textContent;
-                    document.getElementById('languageDropdown').innerHTML = `<i class="uil uil-globe me-1"></i> ${languageText}`;
-
-                    // Save preference
-                    localStorage.setItem('ondesk_language', lang);
-
-                    // In a real app, you would reload the page with the new language
-                    // window.location.reload();
-                });
-            });
-
-            // Check for saved language preference
-            const savedLanguage = localStorage.getItem('ondesk_language');
-            if (savedLanguage) {
-                const langItem = document.querySelector(`[data-lang="${savedLanguage}"]`);
-                if (langItem) {
-                    languageItems.forEach(el => el.classList.remove('active'));
-                    langItem.classList.add('active');
-                    document.getElementById('languageDropdown').innerHTML = `<i class="uil uil-globe me-1"></i> ${langItem.textContent}`;
-                }
-            }
+            // Dark mode is always enabled
+            document.body.classList.add('dark-mode');
 
             // Social login buttons
             const socialButtons = document.querySelectorAll('.social-login-btn');
