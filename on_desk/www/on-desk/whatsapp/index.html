@@ -676,6 +676,8 @@
     </div>
 
     <!-- Scripts -->
+    <script src="/assets/frappe/js/lib/jquery/jquery.min.js"></script>
+    <script src="/assets/js/frappe-web.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Mobile Sidebar Toggle
@@ -758,6 +760,63 @@
                 if (e.key === 'Enter') {
                     sendButton.click();
                 }
+            });
+
+            // Handle logout links
+            const logoutLinks = document.querySelectorAll('a[href="/logout"]');
+            logoutLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    // Show loading state
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="uil uil-spinner-alt fa-spin"></i> Logging out...';
+                    this.style.pointerEvents = 'none';
+
+                    // Prepare headers
+                    const headers = {
+                        'Accept': 'application/json'
+                    };
+
+                    // Add CSRF token if available
+                    if (window.frappe && frappe.csrf_token) {
+                        headers['X-Frappe-CSRF-Token'] = frappe.csrf_token;
+                    }
+
+                    // Set a timeout to redirect to /logout directly if the AJAX call takes too long
+                    const logoutTimeout = setTimeout(() => {
+                        console.log('Logout AJAX call timeout, redirecting to /logout directly');
+                        window.location.href = '/logout';
+                    }, 3000); // 3 seconds timeout
+
+                    // Make AJAX call to logout endpoint
+                    fetch('/api/method/logout', {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: headers
+                    })
+                        .then(response => {
+                            // Clear the timeout since we got a response
+                            clearTimeout(logoutTimeout);
+
+                            if (response.ok) {
+                                // Redirect to login page
+                                window.location.href = '/login';
+                            } else {
+                                // If there's an error, still try to redirect
+                                console.error('Logout failed, redirecting anyway');
+                                window.location.href = '/login';
+                            }
+                        })
+                        .catch(error => {
+                            // Clear the timeout
+                            clearTimeout(logoutTimeout);
+
+                            console.error('Error during logout:', error);
+                            // Even if there's an error, redirect to login
+                            window.location.href = '/login';
+                        });
+                });
             });
         });
     </script>
