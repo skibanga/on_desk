@@ -1,0 +1,129 @@
+<div class="header">
+    <div class="header-welcome">Welcome back, {{ user_first_name }}!</div>
+    <div class="header-actions">
+        <button class="btn-icon"><i class="uil uil-bell"></i></button>
+        <div class="user-dropdown">
+            <button class="btn-icon" id="userDropdownBtn"><i class="uil uil-user"></i></button>
+            <div class="dropdown-menu" id="userDropdownMenu">
+                <a href="/on-desk/profile"><i class="uil uil-user"></i> Profile</a>
+                <a href="/on-desk/settings"><i class="uil uil-setting"></i> Settings</a>
+                <div class="dropdown-divider"></div>
+                <a href="/logout" class="text-danger"><i class="uil uil-signout"></i> Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Header Styles */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 1.5rem;
+        }
+
+        .header-welcome {
+            margin-right: auto;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-actions .btn-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-card);
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+            margin-left: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .header-actions .btn-icon:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-width: 180px;
+            z-index: 1000;
+            display: none;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .dropdown-menu a:hover {
+            background-color: var(--primary-light);
+        }
+
+        .dropdown-menu a i {
+            margin-right: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 0.25rem 0;
+        }
+
+        .text-danger {
+            color: var(--danger-color) !important;
+        }
+
+        .text-danger:hover {
+            background-color: var(--danger-light) !important;
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const userDropdownBtn = document.getElementById('userDropdownBtn');
+            const userDropdownMenu = document.getElementById('userDropdownMenu');
+
+            userDropdownBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                userDropdownMenu.classList.toggle('show');
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!userDropdownBtn.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+                    userDropdownMenu.classList.remove('show');
+                }
+            });
+        });
+    </script>
+</div>
