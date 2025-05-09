@@ -1,0 +1,188 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:template_name",
+ "creation": "2023-07-01 10:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "language",
+  "category",
+  "section_break_4",
+  "header_type",
+  "header_text",
+  "header_image",
+  "header_video",
+  "header_document",
+  "section_break_10",
+  "body_text",
+  "section_break_12",
+  "footer_text",
+  "section_break_14",
+  "sample_values",
+  "section_break_16",
+  "status",
+  "rejection_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "en_US",
+   "fieldname": "language",
+   "fieldtype": "Select",
+   "label": "Language",
+   "options": "en_US\nen_GB\nes_ES\nes_MX\npt_BR\npt_PT\nfr_FR\nde_DE\nit_IT\nru_RU",
+   "reqd": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "ACCOUNT_UPDATE\nPAYMENT_UPDATE\nPERSONAL_FINANCE_UPDATE\nSHIPPING_UPDATE\nRESERVATION_UPDATE\nISSUE_RESOLUTION\nAPPOINTMENT_UPDATE\nTRANSPORTATION_UPDATE\nTICKET_UPDATE\nALERT_UPDATE\nAUTO_REPLY",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break",
+   "label": "Header"
+  },
+  {
+   "default": "TEXT",
+   "fieldname": "header_type",
+   "fieldtype": "Select",
+   "label": "Header Type",
+   "options": "NONE\nTEXT\nIMAGE\nVIDEO\nDOCUMENT"
+  },
+  {
+   "depends_on": "eval:doc.header_type == 'TEXT'",
+   "fieldname": "header_text",
+   "fieldtype": "Data",
+   "label": "Header Text"
+  },
+  {
+   "depends_on": "eval:doc.header_type == 'IMAGE'",
+   "fieldname": "header_image",
+   "fieldtype": "Attach Image",
+   "label": "Header Image"
+  },
+  {
+   "depends_on": "eval:doc.header_type == 'VIDEO'",
+   "fieldname": "header_video",
+   "fieldtype": "Attach",
+   "label": "Header Video"
+  },
+  {
+   "depends_on": "eval:doc.header_type == 'DOCUMENT'",
+   "fieldname": "header_document",
+   "fieldtype": "Attach",
+   "label": "Header Document"
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break",
+   "label": "Body"
+  },
+  {
+   "fieldname": "body_text",
+   "fieldtype": "Text Editor",
+   "label": "Body Text",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_12",
+   "fieldtype": "Section Break",
+   "label": "Footer"
+  },
+  {
+   "fieldname": "footer_text",
+   "fieldtype": "Data",
+   "label": "Footer Text"
+  },
+  {
+   "fieldname": "section_break_14",
+   "fieldtype": "Section Break",
+   "label": "Sample Values"
+  },
+  {
+   "fieldname": "sample_values",
+   "fieldtype": "Table",
+   "label": "Sample Values",
+   "options": "OD WhatsApp Template Parameter"
+  },
+  {
+   "fieldname": "section_break_16",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "PENDING",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "PENDING\nAPPROVED\nREJECTED",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.status == 'REJECTED'",
+   "fieldname": "rejection_reason",
+   "fieldtype": "Text",
+   "label": "Rejection Reason",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-09 11:12:02.215997",
+ "modified_by": "Administrator",
+ "module": "On Desk",
+ "name": "OD WhatsApp Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Helpdesk Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Helpdesk Agent",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

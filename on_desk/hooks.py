@@ -11,7 +11,7 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/on_desk/css/on_desk.css"
-# app_include_js = "/assets/on_desk/js/on_desk.js"
+app_include_js = "/assets/on_desk/js/hd_ticket_whatsapp.js"
 
 # include js, css files in header of web template
 web_include_css = [
@@ -78,7 +78,8 @@ home_page = "login"
 # ------------
 
 # before_install = "on_desk.install.before_install"
-# after_install = "on_desk.install.after_install"
+after_install = "on_desk.setup.whatsapp_integration.setup_whatsapp_integration"
+after_migrate = "on_desk.setup.whatsapp_integration.setup_whatsapp_integration"
 
 # Uninstallation
 # ------------
@@ -132,34 +133,27 @@ home_page = "login"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "HD Ticket": {
+        "on_update": "on_desk.on_desk.doctype.od_whatsapp_integration.api.process_ticket_update",
+        "after_insert": "on_desk.on_desk.doctype.od_whatsapp_integration.api.process_ticket_creation",
+    }
+}
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"on_desk.tasks.all"
-# 	],
-# 	"daily": [
-# 		"on_desk.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"on_desk.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"on_desk.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"on_desk.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+    "all": [
+        "on_desk.on_desk.doctype.od_social_media_message.od_social_media_message.update_message_statuses"
+    ],
+    "daily": [
+        "on_desk.on_desk.doctype.od_whatsapp_template.od_whatsapp_template.update_template_statuses"
+    ],
+    "hourly": [
+        "on_desk.on_desk.doctype.od_whatsapp_integration.api.process_pending_messages"
+    ],
+}
 
 # Testing
 # -------

@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Document Title -->
+    <title>{{ app_name }} - WhatsApp Integration</title>
+
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/on_desk/img/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/on_desk/img/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/on_desk/img/favicons/favicon-16x16.png">
+    <link rel="shortcut icon" type="image/x-icon" href="/assets/on_desk/img/favicons/favicon.ico">
+    <link rel="manifest" href="/assets/on_desk/img/favicons/manifest.json">
+    <meta name="msapplication-TileImage" content="/assets/on_desk/img/favicons/mstile-150x150.png">
+    <meta name="theme-color" content="#ffffff">
+
+    <!-- Stylesheets -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+
+    <style>
+        :root {
+            --primary-color: #16526e;
+            --primary-light: rgba(22, 82, 110, 0.2);
+            --success-color: #10b981;
+            --success-light: rgba(16, 185, 129, 0.2);
+            --warning-color: #f59e0b;
+            --warning-light: rgba(245, 158, 11, 0.2);
+            --danger-color: #ef4444;
+            --danger-light: rgba(239, 68, 68, 0.2);
+            --text-dark: #e2e8f0;
+            --text-light: #94a3b8;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --border-color: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-logo {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-logo img {
+            height: 40px;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-radius: 0.25rem;
+            margin: 0 0.5rem;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .sidebar-menu i {
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+
+        .sidebar-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-footer .avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 0.75rem;
+        }
+
+        .sidebar-footer .user-info {
+            flex: 1;
+        }
+
+        .sidebar-footer .user-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .sidebar-footer .user-role {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 1.5rem;
+        }
+
+        .header-welcome {
+            margin-right: auto;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-actions .btn-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-card);
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+            margin-left: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .header-actions .btn-icon:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        /* WhatsApp Integration */
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .whatsapp-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1.5rem;
+        }
+
+        .whatsapp-card {
+            background-color: var(--bg-card);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .conversation-list {
+            list-style: none;
+        }
+
+        .conversation-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .conversation-item:hover {
+            background-color: var(--primary-light);
+        }
+
+        .conversation-item.active {
+            background-color: var(--primary-light);
+        }
+
+        .conversation-avatar {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+
+        .conversation-info {
+            flex: 1;
+        }
+
+        .conversation-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .conversation-preview {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .conversation-time {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-left: 0.5rem;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+        }
+
+        .chat-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-avatar {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+
+        .chat-info {
+            flex: 1;
+        }
+
+        .chat-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .chat-status {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .message-incoming {
+            background-color: var(--bg-dark);
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+
+        .message-outgoing {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+            text-align: right;
+        }
+
+        .chat-input {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+            margin-right: 0.5rem;
+        }
+
+        .chat-input button {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chat-input button:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .whatsapp-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                top: 0;
+                bottom: 0;
+                z-index: 1000;
+                transition: all 0.3s;
+            }
+
+            .sidebar.show {
+                left: 0;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <img src="/assets/on_desk/img/logo.png" alt="{{ app_name }}">
+            </div>
+            <div class="sidebar-menu">
+                <ul>
+                    <li><a href="/on-desk"><i class="uil uil-dashboard"></i> Dashboard</a></li>
+                    <li><a href="/on-desk/tickets"><i class="uil uil-ticket"></i> Tickets</a></li>
+                    <li><a href="/on-desk/customers"><i class="uil uil-users-alt"></i> Customers</a></li>
+                    <li><a href="/on-desk/agents"><i class="uil uil-user-md"></i> Agents</a></li>
+                    <li><a href="/on-desk/knowledge-base"><i class="uil uil-book-alt"></i> Knowledge Base</a></li>
+                    <li><a href="/on-desk/whatsapp" class="active"><i class="uil uil-whatsapp"></i> WhatsApp</a></li>
+                    <li><a href="/on-desk/reports"><i class="uil uil-chart-pie"></i> Reports</a></li>
+                    <li><a href="/on-desk/settings"><i class="uil uil-setting"></i> Settings</a></li>
+                </ul>
+            </div>
+            <div class="sidebar-footer">
+                <div class="avatar">
+                    {% if user_image %}
+                    <img src="{{ user_image }}" alt="{{ user_full_name }}">
+                    {% else %}
+                    {{ user_first_name[0] }}
+                    {% endif %}
+                </div>
+                <div class="user-info">
+                    <div class="user-name">{{ user_full_name }}</div>
+                    <div class="user-role">{{ user_role }}</div>
+                </div>
+                <a href="/logout" class="logout-btn" title="Logout">
+                    <i class="uil uil-signout"></i>
+                </a>
+            </div>
+
+            <style>
+                .logout-btn {
+                    color: var(--text-light);
+                    font-size: 1.25rem;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 2rem;
+                    height: 2rem;
+                    border-radius: 50%;
+                }
+
+                .logout-btn:hover {
+                    color: var(--danger-color);
+                    background-color: var(--danger-light);
+                }
+            </style>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <div class="header-welcome">Welcome back, {{ user_first_name }}!</div>
+                <div class="header-actions">
+                    <button class="btn-icon"><i class="uil uil-bell"></i></button>
+                    <div class="user-dropdown">
+                        <button class="btn-icon" id="userDropdownBtn"><i class="uil uil-user"></i></button>
+                        <div class="dropdown-menu" id="userDropdownMenu">
+                            <a href="/on-desk/profile"><i class="uil uil-user"></i> Profile</a>
+                            <a href="/on-desk/settings"><i class="uil uil-setting"></i> Settings</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/logout" class="text-danger"><i class="uil uil-signout"></i> Logout</a>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    .user-dropdown {
+                        position: relative;
+                    }
+
+                    .dropdown-menu {
+                        position: absolute;
+                        top: 100%;
+                        right: 0;
+                        background-color: var(--bg-card);
+                        border: 1px solid var(--border-color);
+                        border-radius: 0.5rem;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                        min-width: 180px;
+                        z-index: 1000;
+                        display: none;
+                        margin-top: 0.5rem;
+                        overflow: hidden;
+                    }
+
+                    .dropdown-menu.show {
+                        display: block;
+                    }
+
+                    .dropdown-menu a {
+                        display: flex;
+                        align-items: center;
+                        padding: 0.75rem 1rem;
+                        color: var(--text-dark);
+                        text-decoration: none;
+                        transition: all 0.2s;
+                    }
+
+                    .dropdown-menu a:hover {
+                        background-color: var(--primary-light);
+                    }
+
+                    .dropdown-menu a i {
+                        margin-right: 0.5rem;
+                        font-size: 1.1rem;
+                    }
+
+                    .dropdown-divider {
+                        height: 1px;
+                        background-color: var(--border-color);
+                        margin: 0.25rem 0;
+                    }
+
+                    .text-danger {
+                        color: var(--danger-color) !important;
+                    }
+
+                    .text-danger:hover {
+                        background-color: var(--danger-light) !important;
+                    }
+                </style>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const userDropdownBtn = document.getElementById('userDropdownBtn');
+                        const userDropdownMenu = document.getElementById('userDropdownMenu');
+
+                        userDropdownBtn.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            userDropdownMenu.classList.toggle('show');
+                        });
+
+                        document.addEventListener('click', function (e) {
+                            if (!userDropdownBtn.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+                                userDropdownMenu.classList.remove('show');
+                            }
+                        });
+                    });
+                </script>
+            </div>
+
+            <h1 class="page-title">WhatsApp Integration</h1>
+
+            <div class="whatsapp-grid">
+                <div class="whatsapp-card">
+                    <div class="card-header">
+                        <span>Conversations</span>
+                        <button class="btn-icon"><i class="uil uil-plus"></i></button>
+                    </div>
+                    <div class="card-body">
+                        <ul class="conversation-list">
+                            {% for conversation in conversations %}
+                            <li class="conversation-item {% if loop.index == 1 %}active{% endif %}">
+                                <div class="conversation-avatar">
+                                    {% if conversation.image %}
+                                    <img src="{{ conversation.image }}" alt="{{ conversation.name }}">
+                                    {% else %}
+                                    {{ conversation.name[0] }}
+                                    {% endif %}
+                                </div>
+                                <div class="conversation-info">
+                                    <div class="conversation-name">{{ conversation.name }}</div>
+                                    <div class="conversation-preview">{{ conversation.last_message }}</div>
+                                </div>
+                                <div class="conversation-time">{{ conversation.time }}</div>
+                            </li>
+                            {% endfor %}
+
+                            {% if not conversations %}
+                            <li class="conversation-item">
+                                <div class="conversation-info text-center">
+                                    <div class="conversation-name">No conversations yet</div>
+                                    <div class="conversation-preview">Start a new conversation</div>
+                                </div>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="whatsapp-card">
+                    <div class="chat-container">
+                        <div class="chat-header">
+                            <div class="chat-avatar">
+                                {% if active_conversation.image %}
+                                <img src="{{ active_conversation.image }}" alt="{{ active_conversation.name }}">
+                                {% else %}
+                                {{ active_conversation.name[0] if active_conversation else "?" }}
+                                {% endif %}
+                            </div>
+                            <div class="chat-info">
+                                <div class="chat-name">{{ active_conversation.name if active_conversation else "Select a conversation" }}</div>
+                                <div class="chat-status">{{ active_conversation.status if active_conversation else "No active conversation" }}</div>
+                            </div>
+                        </div>
+                        <div class="chat-messages">
+                            {% for message in messages %}
+                            <div class="message {% if message.direction == 'Incoming' %}message-incoming{% else %}message-outgoing{% endif %}">
+                                {{ message.message }}
+                                <div class="message-time">{{ message.time }}</div>
+                            </div>
+                            {% endfor %}
+
+                            {% if not messages and active_conversation %}
+                            <div class="message message-incoming">
+                                No messages yet. Start the conversation!
+                                <div class="message-time">Now</div>
+                            </div>
+                            {% endif %}
+
+                            {% if not active_conversation %}
+                            <div class="message message-incoming">
+                                Select a conversation to view messages
+                                <div class="message-time">Now</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="chat-input">
+                            <input type="text" placeholder="Type a message..." {% if not active_conversation %}disabled{% endif %}>
+                            <button {% if not active_conversation %}disabled{% endif %}>Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Mobile Sidebar Toggle
+            const toggleSidebar = () => {
+                const sidebar = document.querySelector('.sidebar');
+                const overlay = document.querySelector('.sidebar-overlay');
+
+                sidebar.classList.toggle('show');
+
+                if (!overlay) {
+                    const newOverlay = document.createElement('div');
+                    newOverlay.classList.add('sidebar-overlay');
+                    newOverlay.classList.add('show');
+                    newOverlay.addEventListener('click', toggleSidebar);
+                    document.body.appendChild(newOverlay);
+                } else {
+                    overlay.classList.toggle('show');
+                }
+            };
+
+            // Add mobile menu button if needed
+            if (window.innerWidth <= 768) {
+                const header = document.querySelector('.header');
+                const menuBtn = document.createElement('button');
+                menuBtn.classList.add('btn-icon');
+                menuBtn.innerHTML = '<i class="uil uil-bars"></i>';
+                menuBtn.style.marginRight = 'auto';
+                menuBtn.addEventListener('click', toggleSidebar);
+
+                header.insertBefore(menuBtn, header.firstChild);
+            }
+
+            // Conversation click handler
+            const conversationItems = document.querySelectorAll('.conversation-item');
+            conversationItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    conversationItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // In a real implementation, this would load the conversation
+                    // For now, we'll just show a message
+                    const chatName = this.querySelector('.conversation-name').textContent;
+                    document.querySelector('.chat-name').textContent = chatName;
+                    document.querySelector('.chat-status').textContent = 'Online';
+                    
+                    // Enable the input
+                    document.querySelector('.chat-input input').disabled = false;
+                    document.querySelector('.chat-input button').disabled = false;
+                });
+            });
+
+            // Send message handler
+            const sendButton = document.querySelector('.chat-input button');
+            const messageInput = document.querySelector('.chat-input input');
+            
+            sendButton.addEventListener('click', function() {
+                const message = messageInput.value.trim();
+                if (message) {
+                    // In a real implementation, this would send the message
+                    // For now, we'll just add it to the UI
+                    const messagesContainer = document.querySelector('.chat-messages');
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('message', 'message-outgoing');
+                    messageElement.innerHTML = `
+                        ${message}
+                        <div class="message-time">Just now</div>
+                    `;
+                    messagesContainer.appendChild(messageElement);
+                    
+                    // Clear the input
+                    messageInput.value = '';
+                    
+                    // Scroll to bottom
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            });
+            
+            // Allow sending with Enter key
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendButton.click();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
