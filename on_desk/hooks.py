@@ -76,7 +76,7 @@ website_route_rules = [
 # you would need to exclude all valid routes from this regex.
 website_redirects = [
     {
-        "source": r"/on-desk/(?!(index|whatsapp|404)($|/))(.*)",
+        "source": r"/on-desk/(?!(index|whatsapp|tickets|404)($|/))(.*)",
         "target": "/on-desk/404",
         "match_with_query_string": False,
     }

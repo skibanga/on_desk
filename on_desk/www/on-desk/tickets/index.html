@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} | {{ app_name }}</title>
+    
+    {% include "www/on-desk/includes/head.html" %}
+    
+    {% block page_css %}
+    <style>
+        /* Tickets Page Styles */
+        .tickets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .tickets-filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .filter-btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .tickets-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--bg-card);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .tickets-table th {
+            text-align: left;
+            padding: 1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tickets-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-dark);
+        }
+
+        .tickets-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tickets-table tr:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .ticket-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .ticket-link:hover {
+            text-decoration: underline;
+        }
+
+        .status-badge, .priority-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-primary {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .status-success {
+            background-color: var(--success-light);
+            color: var(--success-color);
+        }
+
+        .status-warning {
+            background-color: var(--warning-light);
+            color: var(--warning-color);
+        }
+
+        .status-danger {
+            background-color: var(--danger-light);
+            color: var(--danger-color);
+        }
+
+        .status-info {
+            background-color: var(--info-light);
+            color: var(--info-color);
+        }
+
+        .status-secondary {
+            background-color: var(--secondary-light);
+            color: var(--secondary-color);
+        }
+
+        .create-ticket-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .create-ticket-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-light);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--text-light);
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .empty-state p {
+            margin-bottom: 1.5rem;
+        }
+    </style>
+    {% endblock %}
+</head>
+
+<body>
+    <div class="app-container">
+        {% include "www/on-desk/includes/sidebar.html" %}
+
+        <!-- Main Content -->
+        <div class="main-content">
+            {% include "www/on-desk/includes/header.html" %}
+
+            <!-- Tickets Header -->
+            <div class="tickets-header">
+                <h1 class="page-title">Tickets</h1>
+                <a href="/on-desk/tickets/new" class="create-ticket-btn">
+                    <i class="uil uil-plus"></i> Create Ticket
+                </a>
+            </div>
+
+            <!-- Tickets Filters -->
+            <div class="tickets-filters">
+                <a href="/on-desk/tickets" class="filter-btn {% if current_filter == 'All' %}active{% endif %}">All</a>
+                {% for status in statuses %}
+                <a href="/on-desk/tickets?status={{ status.name }}" class="filter-btn {% if current_filter == status.name %}active{% endif %}">{{ status.name }}</a>
+                {% endfor %}
+            </div>
+
+            <!-- Tickets Table -->
+            {% if tickets %}
+            <div class="table-responsive">
+                <table class="tickets-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Customer</th>
+                            <th>Created</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td><a href="/on-desk/tickets/{{ ticket.name }}" class="ticket-link">{{ ticket.name }}</a></td>
+                            <td><a href="/on-desk/tickets/{{ ticket.name }}" class="ticket-link">{{ ticket.subject }}</a></td>
+                            <td><span class="status-badge status-{{ ticket.status_color }}">{{ ticket.status }}</span></td>
+                            <td><span class="priority-badge status-{{ ticket.priority_color }}">{{ ticket.priority }}</span></td>
+                            <td>{{ ticket.customer_name }}</td>
+                            <td>{{ ticket.creation_formatted }}</td>
+                            <td>{{ ticket.modified_formatted }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="empty-state">
+                <i class="uil uil-ticket"></i>
+                <h3>No tickets found</h3>
+                <p>There are no tickets matching your criteria.</p>
+                <a href="/on-desk/tickets/new" class="create-ticket-btn">
+                    <i class="uil uil-plus"></i> Create Ticket
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% include "www/on-desk/includes/scripts.html" %}
+</body>
+
+</html>
