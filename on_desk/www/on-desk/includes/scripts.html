@@ -26,12 +26,34 @@
         if (window.innerWidth <= 768) {
             const header = document.querySelector('.header');
             const menuBtn = document.createElement('button');
-            menuBtn.classList.add('btn-icon');
+            menuBtn.classList.add('mobile-menu-btn');
             menuBtn.innerHTML = '<i class="uil uil-bars"></i>';
             menuBtn.style.marginRight = 'auto';
             menuBtn.addEventListener('click', toggleSidebar);
 
             header.insertBefore(menuBtn, header.firstChild);
+
+            // Add styles for the mobile menu button
+            const style = document.createElement('style');
+            style.textContent = `
+                .mobile-menu-btn {
+                    background: transparent;
+                    border: none;
+                    color: #e2e8f0;
+                    font-size: 1.25rem;
+                    cursor: pointer;
+                    padding: 0.5rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-right: 0.5rem;
+                }
+
+                .mobile-menu-btn i {
+                    font-size: 1.5rem;
+                }
+            `;
+            document.head.appendChild(style);
         }
 
         // Handle logout links

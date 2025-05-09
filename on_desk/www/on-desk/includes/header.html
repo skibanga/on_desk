@@ -20,12 +20,23 @@
             align-items: center;
             justify-content: flex-end;
             margin-bottom: 1.5rem;
+            padding: 0.5rem 0;
         }
 
         .header-welcome {
             margin-right: auto;
             font-size: 0.875rem;
-            color: var(--text-light);
+            color: #a0aec0;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 0.75rem 0;
+            }
+
+            .header-welcome {
+                font-size: 0.8125rem;
+            }
         }
 
         .header-actions {
@@ -34,23 +45,22 @@
         }
 
         .header-actions .btn-icon {
-            width: 2.5rem;
-            height: 2.5rem;
+            width: 2.25rem;
+            height: 2.25rem;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: var(--bg-card);
-            color: var(--text-dark);
-            border: 1px solid var(--border-color);
+            background-color: transparent;
+            color: #a0aec0;
+            border: none;
             margin-left: 0.5rem;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .header-actions .btn-icon:hover {
-            background-color: var(--primary-light);
-            color: var(--primary-color);
+            color: #e2e8f0;
         }
 
         .user-dropdown {
