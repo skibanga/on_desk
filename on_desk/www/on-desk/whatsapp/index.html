@@ -635,13 +635,16 @@
                                 {% endif %}
                             </div>
                             <div class="chat-info">
-                                <div class="chat-name">{{ active_conversation.name if active_conversation else "Select a conversation" }}</div>
-                                <div class="chat-status">{{ active_conversation.status if active_conversation else "No active conversation" }}</div>
+                                <div class="chat-name">{{ active_conversation.name if active_conversation else "Select a
+                                    conversation" }}</div>
+                                <div class="chat-status">{{ active_conversation.status if active_conversation else "No
+                                    active conversation" }}</div>
                             </div>
                         </div>
                         <div class="chat-messages">
                             {% for message in messages %}
-                            <div class="message {% if message.direction == 'Incoming' %}message-incoming{% else %}message-outgoing{% endif %}">
+                            <div
+                                class="message {% if message.direction == 'Incoming' %}message-incoming{% else %}message-outgoing{% endif %}">
                                 {{ message.message }}
                                 <div class="message-time">{{ message.time }}</div>
                             </div>
@@ -662,7 +665,8 @@
                             {% endif %}
                         </div>
                         <div class="chat-input">
-                            <input type="text" placeholder="Type a message..." {% if not active_conversation %}disabled{% endif %}>
+                            <input type="text" placeholder="Type a message..." {% if not active_conversation
+                                %}disabled{% endif %}>
                             <button {% if not active_conversation %}disabled{% endif %}>Send</button>
                         </div>
                     </div>
@@ -707,16 +711,16 @@
             // Conversation click handler
             const conversationItems = document.querySelectorAll('.conversation-item');
             conversationItems.forEach(item => {
-                item.addEventListener('click', function() {
+                item.addEventListener('click', function () {
                     conversationItems.forEach(i => i.classList.remove('active'));
                     this.classList.add('active');
-                    
+
                     // In a real implementation, this would load the conversation
                     // For now, we'll just show a message
                     const chatName = this.querySelector('.conversation-name').textContent;
                     document.querySelector('.chat-name').textContent = chatName;
                     document.querySelector('.chat-status').textContent = 'Online';
-                    
+
                     // Enable the input
                     document.querySelector('.chat-input input').disabled = false;
                     document.querySelector('.chat-input button').disabled = false;
@@ -726,8 +730,8 @@
             // Send message handler
             const sendButton = document.querySelector('.chat-input button');
             const messageInput = document.querySelector('.chat-input input');
-            
-            sendButton.addEventListener('click', function() {
+
+            sendButton.addEventListener('click', function () {
                 const message = messageInput.value.trim();
                 if (message) {
                     // In a real implementation, this would send the message
@@ -740,17 +744,17 @@
                         <div class="message-time">Just now</div>
                     `;
                     messagesContainer.appendChild(messageElement);
-                    
+
                     // Clear the input
                     messageInput.value = '';
-                    
+
                     // Scroll to bottom
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 }
             });
-            
+
             // Allow sending with Enter key
-            messageInput.addEventListener('keypress', function(e) {
+            messageInput.addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') {
                     sendButton.click();
                 }
