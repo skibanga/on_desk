@@ -43,12 +43,8 @@
 body {
   font-family: 'Nunito Sans', sans-serif;
   color: var(--text-color);
-  background-color: var(--light-color);
-  transition: background-color var(--transition-speed) ease;
-}
-
-.dark-mode body {
   background-color: var(--dark-color);
+  transition: background-color var(--transition-speed) ease;
 }
 
 /* Admin Sidebar */
@@ -58,15 +54,10 @@ body {
   top: 0;
   left: 0;
   height: 100vh;
-  background-color: #fff;
+  background-color: var(--dark-color);
   border-right: 1px solid var(--border-color);
   z-index: 1030;
   transition: width var(--transition-speed) ease;
-}
-
-.dark-mode .admin-sidebar {
-  background-color: var(--dark-color);
-  border-right-color: var(--border-color);
 }
 
 .admin-sidebar.collapsed {
@@ -87,6 +78,13 @@ body {
 .sidebar-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header .logo-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
 }
 
 .dark-mode .sidebar-header {
@@ -151,24 +149,15 @@ body {
 .admin-header {
   height: var(--header-height);
   border-bottom: 1px solid var(--border-color);
-  background-color: #fff;
-  padding: 0 1.5rem;
-}
-
-.dark-mode .admin-header {
   background-color: var(--dark-color);
-  border-bottom-color: var(--border-color);
+  padding: 0 1.5rem;
 }
 
 /* Admin Main Content */
 .admin-main {
   padding: 1.5rem;
-  background-color: var(--light-color);
-  min-height: calc(100vh - var(--header-height));
-}
-
-.dark-mode .admin-main {
   background-color: var(--dark-color);
+  min-height: calc(100vh - var(--header-height));
 }
 
 /* Cards */
@@ -176,23 +165,14 @@ body {
   border-radius: var(--border-radius);
   border: 1px solid var(--border-color);
   box-shadow: var(--box-shadow);
-  background-color: #fff;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.dark-mode .card {
   background-color: #1f2937;
-  border-color: var(--border-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-header {
   border-bottom: 1px solid var(--border-color);
   background-color: transparent;
   padding: 1rem 1.5rem;
-}
-
-.dark-mode .card-header {
-  border-bottom-color: var(--border-color);
 }
 
 /* Stat Cards */
@@ -225,12 +205,7 @@ body {
   position: absolute;
   bottom: 0;
   width: 100%;
-  background-color: #fff;
-}
-
-.dark-mode .sidebar-user {
   background-color: var(--dark-color);
-  border-top-color: var(--border-color);
 }
 
 .sidebar-user-img {
@@ -240,21 +215,47 @@ body {
   object-fit: cover;
 }
 
+.sidebar-user-initial {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.user-initial-small {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* Responsive Styles */
 @media (max-width: 992px) {
   .admin-sidebar {
     transform: translateX(-100%);
     box-shadow: var(--box-shadow-hover);
   }
-  
+
   .admin-sidebar.show {
     transform: translateX(0);
   }
-  
+
   .admin-content {
     margin-left: 0;
   }
-  
+
   .sidebar-toggle {
     right: -12px;
   }
@@ -330,7 +331,6 @@ body {
 
 /* Collapsed Sidebar Styles */
 .admin-sidebar.collapsed .nav-link-text,
-.admin-sidebar.collapsed .sidebar-logo-text,
 .admin-sidebar.collapsed .sidebar-user-name,
 .admin-sidebar.collapsed .sidebar-user-role {
   opacity: 0;
@@ -340,6 +340,11 @@ body {
 
 .admin-sidebar.collapsed .sidebar-header {
   padding: 1.5rem 0.75rem;
+}
+
+.admin-sidebar.collapsed .sidebar-header .logo-img {
+  width: 40px;
+  height: 40px;
 }
 
 .admin-sidebar.collapsed .nav-link {

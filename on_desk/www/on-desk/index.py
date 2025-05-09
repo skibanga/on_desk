@@ -2,20 +2,21 @@ import frappe
 from frappe import _
 from frappe.utils import get_gravatar, get_url, now_datetime
 
+
 def get_context(context):
     context.no_cache = 1
-    
+
     # Check if user is logged in
     if frappe.session.user == "Guest":
         frappe.local.flags.redirect_location = "/login"
         raise frappe.Redirect
-    
+
     # Get user information
     user = frappe.get_doc("User", frappe.session.user)
     context.user_full_name = user.full_name
     context.user_first_name = user.first_name or user.full_name.split(" ")[0]
     context.user_image = user.user_image or get_gravatar(user.email)
-    
+
     # Get user role
     user_roles = frappe.get_roles(frappe.session.user)
     if "Administrator" in user_roles:
@@ -28,11 +29,12 @@ def get_context(context):
         context.user_role = "Helpdesk Agent"
     else:
         context.user_role = "User"
-    
+
     # Get app settings
     context.app_name = frappe_get_website_settings("app_name") or "On Desk"
-    context.app_logo = frappe_get_website_settings("app_logo") or "/assets/on_desk/img/icons/logo.png"
-    
+    context.app_logo = "/assets/on_desk/img/icons/logo1.png"
+    context.dark_mode = True
+
     # Get dashboard statistics
     try:
         # This is a placeholder for future implementation
@@ -48,8 +50,9 @@ def get_context(context):
         context.resolved_today = "N/A"
         context.avg_response_time = "N/A"
         context.total_customers = "N/A"
-    
+
     return context
+
 
 def frappe_get_website_settings(key):
     """Helper function to get website settings"""
