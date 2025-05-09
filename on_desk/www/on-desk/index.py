@@ -35,6 +35,10 @@ def get_context(context):
     context.app_logo = "/assets/on_desk/img/icons/logo1.png"
     context.dark_mode = True
 
+    # Set current page for sidebar highlighting
+    context.current_page = "dashboard"
+    context.page_title = "Dashboard"
+
     # Get dashboard statistics
     try:
         # This is a placeholder for future implementation
