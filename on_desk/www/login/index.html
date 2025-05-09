@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr" data-navigation-type="default" data-navbar-horizontal-shape="default">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Document Title -->
+    <title>On Desk - Login</title>
+
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/on_desk/img/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/on_desk/img/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/on_desk/img/favicons/favicon-16x16.png">
+    <link rel="shortcut icon" type="image/x-icon" href="/assets/on_desk/img/favicons/favicon.ico">
+    <link rel="manifest" href="/assets/on_desk/img/favicons/manifest.json">
+    <meta name="msapplication-TileImage" content="/assets/on_desk/img/favicons/mstile-150x150.png">
+    <meta name="theme-color" content="#ffffff">
+
+    <!-- Stylesheets -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link href="/assets/on_desk/vendors/simplebar/simplebar.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+    <link href="/assets/on_desk/css/theme.min.css" type="text/css" rel="stylesheet" id="style-default">
+    <link href="/assets/on_desk/css/user.min.css" type="text/css" rel="stylesheet" id="user-style-default">
+
+    <style>
+        .login-bg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.03);
+            z-index: -1;
+        }
+
+        .login-bg-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            z-index: -2;
+        }
+
+        .social-login-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            margin-bottom: 0.75rem;
+        }
+
+        .social-login-btn i {
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+
+        .google-btn {
+            background-color: #ffffff;
+            color: #757575;
+            border: 1px solid #dfe1e5;
+        }
+
+        .google-btn:hover {
+            background-color: #f8f9fa;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+
+        .microsoft-btn {
+            background-color: #2f2f2f;
+            color: #ffffff;
+        }
+
+        .microsoft-btn:hover {
+            background-color: #000000;
+        }
+
+        .apple-btn {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        .apple-btn:hover {
+            background-color: #333333;
+        }
+
+        .login-card {
+            border-radius: 1rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            background-color: #ffffff;
+            padding: 2rem;
+        }
+
+        .form-feedback {
+            display: none;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .is-invalid .form-feedback {
+            display: block;
+            color: #dc3545;
+        }
+
+        .is-invalid .form-control {
+            border-color: #dc3545;
+        }
+
+        .login-btn {
+            height: 48px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .login-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        .login-btn .spinner-border {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.5rem;
+            display: none;
+        }
+
+        .login-btn.loading .spinner-border {
+            display: inline-block;
+        }
+
+        .login-footer {
+            font-size: 0.875rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .login-footer a {
+            color: var(--bs-primary);
+            text-decoration: none;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        logout .language-selector {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            cursor: pointer;
+            font-size: 1.25rem;
+            color: #6c757d;
+        }
+
+        .theme-toggle:hover {
+            color: var(--bs-primary);
+        }
+
+        @media (max-width: 576px) {
+            .login-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background Patterns -->
+    <div class="login-bg-pattern"></div>
+    <div class="login-bg-overlay"></div>
+
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+        <i class="uil uil-moon dark-mode-icon"></i>
+        <i class="uil uil-sun light-mode-icon d-none"></i>
+    </div>
+
+    <!-- Language Selector -->
+    <div class="language-selector dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="languageDropdown"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="uil uil-globe me-1"></i> English
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+            <li><a class="dropdown-item active" href="#" data-lang="en">English</a></li>
+            <li><a class="dropdown-item" href="#" data-lang="es">Español</a></li>
+            <li><a class="dropdown-item" href="#" data-lang="fr">Français</a></li>
+            <li><a class="dropdown-item" href="#" data-lang="de">Deutsch</a></li>
+            <li><a class="dropdown-item" href="#" data-lang="pt">Português</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main" id="top">
+        <div class="container">
+            <div class="row flex-center min-vh-100 py-5">
+                <div class="col-sm-10 col-md-8 col-lg-6 col-xl-5">
+                    <div class="login-card">
+                        <a class="d-flex flex-center text-decoration-none mb-4" href="/">
+                            <div class="d-flex align-items-center fw-bolder fs-3 d-inline-block">
+                                <img src="{{ app_logo }}" alt="{{ app_name }}" width="58" />
+                                <span class="text-primary ms-2">{{ app_name }}</span>
+                            </div>
+                        </a>
+                        <div class="text-center mb-5">
+                            <h3 class="text-body-highlight">Welcome Back!</h3>
+                            <p class="text-body-tertiary">Sign in to your helpdesk account</p>
+                        </div>
+
+                        <!-- Social Login Buttons -->
+                        {% if social_login %}
+                        <div class="mb-4">
+                            {% for provider in providers %}
+                            <a href="{{ provider.auth_url }}" class="social-login-btn w-100 mb-2"
+                                style="background-color: {{ provider.color|default('#f8f9fa') }}; color: {{ provider.text_color|default('#333') }};">
+                                <i class="{{ provider.icon|default('fab fa-globe') }}"></i> Continue with {{
+                                provider.provider_name }}
+                            </a>
+                            {% endfor %}
+                        </div>
+
+                        <div class="position-relative mb-4">
+                            <hr class="bg-body-secondary">
+                            <div class="divider-content-center">or use email</div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Alert for errors -->
+                        <div class="alert alert-danger d-none" id="login-error" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <span id="error-message">Invalid email or password. Please try again.</span>
+                        </div>
+
+                        <!-- Login Form -->
+                        <form id="login-form" novalidate>
+                            <div class="mb-3 text-start">
+                                <label class="form-label" for="email">Username or Email</label>
+                                <div class="form-icon-container">
+                                    <input class="form-control form-icon-input" id="email" name="usr" type="text"
+                                        placeholder="Username or Email" required />
+                                    <span class="fas fa-user text-body fs-9 form-icon"></span>
+                                </div>
+                                <div class="form-feedback">Please enter your username or email</div>
+                            </div>
+                            <div class="mb-3 text-start">
+                                <label class="form-label" for="password">Password</label>
+                                <div class="form-icon-container" data-password="data-password">
+                                    <input class="form-control form-icon-input pe-6" id="password" name="pwd"
+                                        type="password" placeholder="Password" required minlength="6"
+                                        data-password-input="data-password-input" />
+                                    <span class="fas fa-lock text-body fs-9 form-icon"></span>
+                                    <button
+                                        class="btn px-3 py-0 h-100 position-absolute top-0 end-0 fs-7 text-body-tertiary"
+                                        data-password-toggle="data-password-toggle" type="button">
+                                        <span class="uil uil-eye show"></span>
+                                        <span class="uil uil-eye-slash hide d-none"></span>
+                                    </button>
+                                </div>
+                                <div class="form-feedback">Password must be at least 6 characters</div>
+                            </div>
+                            <div class="row flex-between-center mb-4">
+                                <div class="col-auto">
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input" id="remember-me" type="checkbox"
+                                            checked="checked" />
+                                        <label class="form-check-label mb-0" for="remember-me">Remember me</label>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <a class="fs-9 fw-semibold" href="/forgot">Forgot Password?</a>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary w-100 mb-3 login-btn" type="submit" id="login-button">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Sign In
+                            </button>
+                            {% if allow_signup %}
+                            <div class="text-center">
+                                <p class="mb-0 fs-9">Don't have an account? <a href="/signup" class="fw-semibold">Create
+                                        an account</a></p>
+                            </div>
+                            {% endif %}
+                        </form>
+                    </div>
+
+                    <!-- Login Footer -->
+                    <div class="login-footer mt-4">
+                        <p>© {{ frappe.utils.now_datetime().year }} {{ app_name }}. All rights reserved.</p>
+                        <div>
+                            <a href="/privacy-policy" class="me-3">Privacy Policy</a>
+                            <a href="/terms-of-service">Terms of Service</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScripts -->
+    <script src="/assets/on_desk/vendors/popper/popper.min.js"></script>
+    <script src="/assets/on_desk/vendors/bootstrap/bootstrap.min.js"></script>
+    <script src="/assets/on_desk/vendors/anchorjs/anchor.min.js"></script>
+    <script src="/assets/on_desk/vendors/is/is.min.js"></script>
+    <script src="/assets/on_desk/vendors/fontawesome/all.min.js"></script>
+    <script src="/assets/on_desk/vendors/lodash/lodash.min.js"></script>
+    <script src="/assets/on_desk/vendors/list.js/list.min.js"></script>
+    <script src="/assets/on_desk/vendors/feather-icons/feather.min.js"></script>
+    <script src="/assets/on_desk/vendors/dayjs/dayjs.min.js"></script>
+    <script src="/assets/on_desk/js/phoenix.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loginForm = document.getElementById('login-form');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const loginButton = document.getElementById('login-button');
+            const loginError = document.getElementById('login-error');
+            const errorMessage = document.getElementById('error-message');
+            const rememberMe = document.getElementById('remember-me');
+            const themeToggle = document.querySelector('.theme-toggle');
+            const darkModeIcon = document.querySelector('.dark-mode-icon');
+            const lightModeIcon = document.querySelector('.light-mode-icon');
+
+            // Check for saved email
+            const savedEmail = localStorage.getItem('ondesk_email');
+            if (savedEmail) {
+                emailInput.value = savedEmail;
+            }
+
+            // Form validation
+            function validateForm() {
+                let isValid = true;
+
+                // Validate username/email field
+                if (!emailInput.value || emailInput.value.trim() === '') {
+                    emailInput.parentElement.parentElement.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    emailInput.parentElement.parentElement.classList.remove('is-invalid');
+                }
+
+                // Validate password
+                if (!passwordInput.value || passwordInput.value.length < 6) {
+                    passwordInput.parentElement.parentElement.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    passwordInput.parentElement.parentElement.classList.remove('is-invalid');
+                }
+
+                return isValid;
+            }
+
+            // Handle form submission
+            loginForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                // Validate form
+                if (!validateForm()) {
+                    return;
+                }
+
+                // Show loading state
+                loginButton.classList.add('loading');
+                loginButton.disabled = true;
+
+                // Get form data
+                const email = emailInput.value;
+                const password = passwordInput.value;
+
+                // Save email if remember me is checked
+                if (rememberMe.checked) {
+                    localStorage.setItem('ondesk_email', email);
+                } else {
+                    localStorage.removeItem('ondesk_email');
+                }
+
+                // Simulate API call with timeout
+                setTimeout(() => {
+                    // Use Frappe's login API and then redirect to our custom admin panel
+                    fetch('/api/method/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            usr: email,
+                            pwd: password,
+                            device: 'desktop'
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.message === 'Logged In') {
+                                window.location.href = '/on-desk';
+                            } else {
+                                // Show error message
+                                loginButton.classList.remove('loading');
+                                loginButton.disabled = false;
+                                loginError.classList.remove('d-none');
+                                errorMessage.textContent = data.message || 'Invalid login credentials. Please try again.';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Login error:', error);
+                            loginButton.classList.remove('loading');
+                            loginButton.disabled = false;
+                            loginError.classList.remove('d-none');
+                            errorMessage.textContent = 'An error occurred during login. Please try again.';
+                        });
+                }, 1000);
+            });
+
+            // Toggle password visibility
+            const passwordToggle = document.querySelector('[data-password-toggle]');
+            if (passwordToggle) {
+                passwordToggle.addEventListener('click', function () {
+                    const passwordInput = document.querySelector('[data-password-input]');
+                    const type = passwordInput.type === 'password' ? 'text' : 'password';
+                    passwordInput.type = type;
+
+                    // Toggle visibility of eye icons
+                    this.querySelector('.show').classList.toggle('d-none');
+                    this.querySelector('.hide').classList.toggle('d-none');
+                });
+            }
+
+            // Theme toggle functionality
+            themeToggle.addEventListener('click', function () {
+                document.body.classList.toggle('dark-mode');
+                darkModeIcon.classList.toggle('d-none');
+                lightModeIcon.classList.toggle('d-none');
+
+                // Save preference
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                localStorage.setItem('ondesk_dark_mode', isDarkMode ? 'true' : 'false');
+            });
+
+            // Check for saved theme preference
+            const savedTheme = localStorage.getItem('ondesk_dark_mode');
+            if (savedTheme === 'true') {
+                document.body.classList.add('dark-mode');
+                darkModeIcon.classList.add('d-none');
+                lightModeIcon.classList.remove('d-none');
+            }
+
+            // Language selector
+            const languageItems = document.querySelectorAll('[data-lang]');
+            languageItems.forEach(item => {
+                item.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const lang = this.getAttribute('data-lang');
+
+                    // Update active state
+                    languageItems.forEach(el => el.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // Update dropdown text
+                    const languageText = this.textContent;
+                    document.getElementById('languageDropdown').innerHTML = `<i class="uil uil-globe me-1"></i> ${languageText}`;
+
+                    // Save preference
+                    localStorage.setItem('ondesk_language', lang);
+
+                    // In a real app, you would reload the page with the new language
+                    // window.location.reload();
+                });
+            });
+
+            // Check for saved language preference
+            const savedLanguage = localStorage.getItem('ondesk_language');
+            if (savedLanguage) {
+                const langItem = document.querySelector(`[data-lang="${savedLanguage}"]`);
+                if (langItem) {
+                    languageItems.forEach(el => el.classList.remove('active'));
+                    langItem.classList.add('active');
+                    document.getElementById('languageDropdown').innerHTML = `<i class="uil uil-globe me-1"></i> ${langItem.textContent}`;
+                }
+            }
+
+            // Social login buttons
+            const socialButtons = document.querySelectorAll('.social-login-btn');
+            socialButtons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    if (this.getAttribute('href') === '#') {
+                        e.preventDefault();
+                        // Show error for demo buttons without real auth URLs
+                        loginError.classList.remove('d-none');
+                        errorMessage.textContent = 'Social login is not available in this demo.';
+
+                        // Hide error after 3 seconds
+                        setTimeout(() => {
+                            loginError.classList.add('d-none');
+                        }, 3000);
+                    }
+                });
+            });
+
+            // Input validation on blur
+            emailInput.addEventListener('blur', function () {
+                if (!this.value || this.value.trim() === '') {
+                    this.parentElement.parentElement.classList.add('is-invalid');
+                } else {
+                    this.parentElement.parentElement.classList.remove('is-invalid');
+                }
+            });
+
+            passwordInput.addEventListener('blur', function () {
+                if (!this.value || this.value.length < 6) {
+                    this.parentElement.parentElement.classList.add('is-invalid');
+                } else {
+                    this.parentElement.parentElement.classList.remove('is-invalid');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

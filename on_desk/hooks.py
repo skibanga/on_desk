@@ -14,8 +14,17 @@ app_license = "mit"
 # app_include_js = "/assets/on_desk/js/on_desk.js"
 
 # include js, css files in header of web template
-# web_include_css = "/assets/on_desk/css/on_desk.css"
-# web_include_js = "/assets/on_desk/js/on_desk.js"
+web_include_css = [
+    "/assets/on_desk/css/theme.min.css",
+    "/assets/on_desk/css/user.min.css",
+    "https://unicons.iconscout.com/release/v4.0.8/css/line.css",
+]
+web_include_js = [
+    "/assets/on_desk/vendors/popper/popper.min.js",
+    "/assets/on_desk/vendors/bootstrap/bootstrap.min.js",
+    "/assets/on_desk/vendors/fontawesome/all.min.js",
+    "/assets/on_desk/js/phoenix.js",
+]
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "on_desk/public/scss/website"
@@ -42,7 +51,7 @@ app_license = "mit"
 # ----------
 
 # application home page (will override Website Settings)
-# home_page = "login"
+home_page = "login"
 
 # website user home page (by Role)
 # role_home_page = {
@@ -226,4 +235,3 @@ app_license = "mit"
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-
