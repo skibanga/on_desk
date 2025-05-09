@@ -65,6 +65,23 @@ home_page = "login"
 # automatically create page for each record of this doctype
 # website_generators = ["Web Page"]
 
+# Website Route Rules
+# ------------------
+website_route_rules = [
+    {"from_route": "/404", "to_route": "on_desk.www.404"},
+]
+
+# Website redirects
+# Note: This is a simplified approach. In a production environment,
+# you would need to exclude all valid routes from this regex.
+website_redirects = [
+    {
+        "source": r"/on-desk/(?!(index|whatsapp|404)($|/))(.*)",
+        "target": "/on-desk/404",
+        "match_with_query_string": False,
+    }
+]
+
 # Jinja
 # ----------
 
