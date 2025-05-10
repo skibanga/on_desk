@@ -14,7 +14,28 @@ from on_desk.utils.whatsapp import get_whatsapp_integration
 def webhook():
     """Handle WhatsApp webhook requests"""
     if frappe.request.method == "GET":
-        return handle_verification()
+        # Handle verification directly in the main webhook function
+        try:
+            # Get the WhatsApp integration settings
+            settings = get_whatsapp_integration(throw_if_not_found=True)
+
+            # Get query parameters
+            mode = frappe.form_dict.get("hub.mode")
+            token = frappe.form_dict.get("hub.verify_token")
+            challenge = frappe.form_dict.get("hub.challenge")
+
+            # Verify the token
+            if mode == "subscribe" and token == settings.webhook_verify_token:
+                # Return the challenge directly without any processing
+                return challenge
+
+            frappe.throw(_("Verification failed"))
+        except Exception as e:
+            frappe.log_error(
+                f"WhatsApp Webhook Verification Error: {str(e)}",
+                "WhatsApp Webhook Error",
+            )
+            frappe.throw(_("Verification failed"))
     elif frappe.request.method == "POST":
         return handle_incoming_message()
     else:
@@ -22,28 +43,13 @@ def webhook():
 
 
 def handle_verification():
-    """Handle webhook verification from Meta"""
-    try:
-        # Get the WhatsApp integration settings
-        settings = get_whatsapp_integration(throw_if_not_found=True)
-
-        # Get query parameters
-        mode = frappe.form_dict.get("hub.mode")
-        token = frappe.form_dict.get("hub.verify_token")
-        challenge = frappe.form_dict.get("hub.challenge")
-
-        # Verify the token
-        if mode == "subscribe" and token == settings.webhook_verify_token:
-            # Return the challenge directly without JSON wrapping
-            frappe.response = challenge
-            return
-
-        frappe.throw(_("Verification failed"))
-    except Exception as e:
-        frappe.log_error(
-            f"WhatsApp Webhook Verification Error: {str(e)}", "WhatsApp Webhook Error"
+    """Handle webhook verification from Meta - DEPRECATED, now handled in webhook() directly"""
+    # This function is kept for backward compatibility but is no longer used
+    frappe.throw(
+        _(
+            "This function is deprecated. Verification is now handled directly in the webhook function."
         )
-        frappe.throw(_("Verification failed"))
+    )
 
 
 def handle_incoming_message():
