@@ -168,6 +168,18 @@ def create_social_media_message(
         message_doc.media_id = media_id
 
     message_doc.insert(ignore_permissions=True)
+
+    # Publish realtime event for incoming message
+    frappe.publish_realtime(
+        "whatsapp_message_received",
+        {
+            "message_id": message_id,
+            "from_number": from_number,
+            "message": text,
+            "timestamp": timestamp,
+        },
+    )
+
     return message_doc.name
 
 

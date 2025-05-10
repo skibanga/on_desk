@@ -54,6 +54,8 @@ class ODSocialMediaMessage(Document):
                 # Update the message status
                 status = response_data.get("status", "")
 
+                old_status = self.status
+
                 if status == "delivered":
                     self.status = "Delivered"
                 elif status == "read":
@@ -62,6 +64,19 @@ class ODSocialMediaMessage(Document):
                     self.status = "Failed"
 
                 self.save()
+
+                # If status changed, publish realtime update
+                if old_status != self.status:
+                    frappe.publish_realtime(
+                        "whatsapp_message_status_update",
+                        {
+                            "message_id": self.message_id,
+                            "status": self.status,
+                            "from_number": self.from_number,
+                            "to_number": self.to_number,
+                        },
+                    )
+
                 return response_data
             else:
                 frappe.log_error(
@@ -267,23 +282,85 @@ def send_whatsapp_message_from_ticket(
 
 def update_message_statuses():
     """Update the status of all outgoing WhatsApp messages (scheduled task)"""
+    # Get WhatsApp integration settings
+    settings = get_whatsapp_integration()
+
+    if not settings or not settings.enabled:
+        return
+
+    # Only Meta provider supports message status check via API
+    if settings.provider != "Meta":
+        return
+
     # Get all outgoing WhatsApp messages that are not in a final state
+    # Limit to messages sent in the last 24 hours to avoid checking very old messages
     messages = frappe.get_all(
         "OD Social Media Message",
         filters={
             "channel": "WhatsApp",
             "direction": "Outgoing",
             "status": ["in", ["Sent", "Delivered"]],
+            "creation": [">", frappe.utils.add_days(frappe.utils.now(), -1)],
         },
-        fields=["name"],
+        fields=["name", "message_id"],
+        limit=50,  # Process in batches to avoid overloading
     )
 
+    if not messages:
+        return
+
+    # Prepare API request headers
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {settings.get_password('api_key')}",
+    }
+
+    # Process messages in batches
     for message_data in messages:
         try:
-            message = frappe.get_doc("OD Social Media Message", message_data.name)
-            message.update_message_status()
+            # Make the API request
+            url = f"{settings.api_endpoint}/{settings.phone_number_id}/messages/{message_data.message_id}"
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                response_data = response.json()
+                status = response_data.get("status", "")
+
+                # Update the message status
+                if status in ["delivered", "read", "failed"]:
+                    message = frappe.get_doc(
+                        "OD Social Media Message", message_data.name
+                    )
+                    old_status = message.status
+
+                    if status == "delivered" and message.status != "Delivered":
+                        message.status = "Delivered"
+                    elif status == "read" and message.status != "Read":
+                        message.status = "Read"
+                    elif status == "failed" and message.status != "Failed":
+                        message.status = "Failed"
+
+                    # Only save if status changed
+                    if old_status != message.status:
+                        message.save()
+
+                        # Publish realtime update
+                        frappe.publish_realtime(
+                            "whatsapp_message_status_update",
+                            {
+                                "message_id": message.message_id,
+                                "status": message.status,
+                                "from_number": message.from_number,
+                                "to_number": message.to_number,
+                            },
+                        )
+            else:
+                frappe.log_error(
+                    f"WhatsApp Message Status API Error for message {message_data.message_id}: {response.text}",
+                    "WhatsApp Message Status Error",
+                )
         except Exception as e:
             frappe.log_error(
-                f"Error updating WhatsApp message status: {str(e)}",
+                f"Error updating WhatsApp message status for message {message_data.message_id}: {str(e)}",
                 "WhatsApp Message Status Error",
             )
