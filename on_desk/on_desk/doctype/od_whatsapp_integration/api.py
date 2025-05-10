@@ -34,7 +34,8 @@ def handle_verification():
 
         # Verify the token
         if mode == "subscribe" and token == settings.webhook_verify_token:
-            frappe.response["message"] = challenge
+            # Return the challenge directly without JSON wrapping
+            frappe.response = challenge
             return
 
         frappe.throw(_("Verification failed"))
