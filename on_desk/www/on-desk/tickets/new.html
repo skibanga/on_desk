@@ -153,7 +153,10 @@
 
             <!-- Ticket Form -->
             <div class="ticket-form-container">
-                <form id="createTicketForm">
+                <form id="createTicketForm" method="POST" action="/api/method/on_desk.api.create_ticket">
+                    <!-- Hidden CSRF token field -->
+                    <input type="hidden" name="csrf_token" value="{{ frappe.session.csrf_token }}">
+
                     <div class="form-group">
                         <label for="subject" class="required-field">Subject</label>
                         <input type="text" id="subject" name="subject" class="form-control" required>
@@ -210,103 +213,32 @@
 
                     <div class="form-actions">
                         <a href="/on-desk/tickets" class="btn btn-outline">Cancel</a>
-                        <button type="button" onclick="createTicket()" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary">
                             <i class="uil uil-save"></i> Create Ticket
                         </button>
                     </div>
+
+                    <!-- Add a hidden field for redirect URL -->
+                    <input type="hidden" name="redirect_to" value="/on-desk/tickets">
                 </form>
             </div>
         </div>
     </div>
 
     {% include "www/on-desk/includes/scripts.html" %}
+    <script src="/assets/frappe/js/frappe-web.min.js"></script>
+    <script src="/assets/js/control.min.js"></script>
 
     <script>
-        function createTicket() {
-            // Get form values
-            const subject = document.getElementById('subject').value;
-            const description = document.getElementById('description').value;
-            const ticketType = document.getElementById('ticket_type').value;
-            const priority = document.getElementById('priority').value;
-            const agentGroup = document.getElementById('agent_group').value;
-
-            // Validate required fields
-            if (!subject || !description || !ticketType || !priority) {
-                frappe.show_alert({
-                    message: 'Please fill in all required fields',
-                    indicator: 'red'
-                });
-                return;
-            }
-
-            // Prepare data object
-            let data = {
-                subject: subject,
-                description: description,
-                ticket_type: ticketType,
-                priority: priority
-            };
-
-            // Add optional fields if they exist
-            if (agentGroup) {
-                data.agent_group = agentGroup;
-            }
-
-            {% if customers %}
-            const customer = document.getElementById('customer').value;
-            if (!customer) {
-                frappe.show_alert({
-                    message: 'Please select a customer',
-                    indicator: 'red'
-                });
-                return;
-            }
-            data.customer = customer;
-            {% endif %}
-
-            // Disable the submit button
-            const submitButton = document.querySelector('.btn-primary');
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="uil uil-spinner-alt"></i> Creating...';
-
-            // Submit the form
-            frappe.call({
-                method: 'helpdesk.helpdesk.doctype.hd_ticket.api.create_ticket',
-                args: data,
-                callback: function (response) {
-                    if (response.message && response.message.name) {
-                        frappe.show_alert({
-                            message: 'Ticket created successfully',
-                            indicator: 'green'
-                        });
-
-                        // Redirect to the ticket page
-                        setTimeout(function () {
-                            window.location.href = '/on-desk/tickets/' + response.message.name;
-                        }, 1000);
-                    } else {
-                        // Re-enable the submit button
-                        submitButton.disabled = false;
-                        submitButton.innerHTML = '<i class="uil uil-save"></i> Create Ticket';
-
-                        frappe.show_alert({
-                            message: 'Failed to create ticket: ' + (response.exc_message || 'Unknown error'),
-                            indicator: 'red'
-                        });
-                    }
-                },
-                error: function (err) {
-                    // Re-enable the submit button
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = '<i class="uil uil-save"></i> Create Ticket';
-
-                    frappe.show_alert({
-                        message: 'Failed to create ticket: ' + (err.message || 'Unknown error'),
-                        indicator: 'red'
-                    });
-                }
+        // Add loading indicator when form is submitted
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('createTicketForm');
+            form.addEventListener('submit', function () {
+                const submitButton = document.querySelector('.btn-primary');
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="uil uil-spinner-alt"></i> Creating...';
             });
-        }
+        });
     </script>
 </body>
 

@@ -7,6 +7,7 @@ import hmac
 import hashlib
 from frappe import _
 from frappe.utils import get_datetime, now
+from on_desk.utils.whatsapp import get_whatsapp_integration
 
 
 @frappe.whitelist(allow_guest=True)
@@ -24,7 +25,7 @@ def handle_verification():
     """Handle webhook verification from Meta"""
     try:
         # Get the WhatsApp integration settings
-        settings = frappe.get_doc("OD WhatsApp Integration", "OD WhatsApp Integration")
+        settings = get_whatsapp_integration(throw_if_not_found=True)
 
         # Get query parameters
         mode = frappe.form_dict.get("hub.mode")
@@ -48,7 +49,7 @@ def handle_incoming_message():
     """Handle incoming WhatsApp messages"""
     try:
         # Get the WhatsApp integration settings
-        settings = frappe.get_doc("OD WhatsApp Integration", "OD WhatsApp Integration")
+        settings = get_whatsapp_integration(throw_if_not_found=True)
 
         # Get the request data
         data = json.loads(frappe.request.data)
@@ -298,13 +299,10 @@ def find_or_create_contact(phone_number):
 
 def process_ticket_creation(doc, method):
     """Process ticket creation for WhatsApp notification"""
-    # Check if WhatsApp integration is enabled
-    if not frappe.db.exists("OD WhatsApp Integration", "OD WhatsApp Integration"):
-        return
+    # Get WhatsApp integration settings
+    settings = get_whatsapp_integration()
 
-    settings = frappe.get_doc("OD WhatsApp Integration", "OD WhatsApp Integration")
-
-    if not settings.enabled:
+    if not settings or not settings.enabled:
         return
 
     # Only send notification if the ticket was not created via WhatsApp
@@ -320,13 +318,10 @@ def process_ticket_creation(doc, method):
 
 def process_ticket_update(doc, method):
     """Process ticket update for WhatsApp notification"""
-    # Check if WhatsApp integration is enabled
-    if not frappe.db.exists("OD WhatsApp Integration", "OD WhatsApp Integration"):
-        return
+    # Get WhatsApp integration settings
+    settings = get_whatsapp_integration()
 
-    settings = frappe.get_doc("OD WhatsApp Integration", "OD WhatsApp Integration")
-
-    if not settings.enabled:
+    if not settings or not settings.enabled:
         return
 
     # Get the old document

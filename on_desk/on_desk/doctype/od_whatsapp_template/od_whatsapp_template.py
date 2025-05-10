@@ -6,6 +6,7 @@ import re
 import json
 import requests
 from frappe.model.document import Document
+from on_desk.utils.whatsapp import get_whatsapp_integration
 
 
 class ODWhatsAppTemplate(Document):
@@ -34,16 +35,14 @@ class ODWhatsAppTemplate(Document):
 
     def after_insert(self):
         """Submit the template to WhatsApp for approval if integration is configured"""
-        if frappe.db.exists("OD WhatsApp Integration", "OD WhatsApp Integration"):
+        if get_whatsapp_integration():
             self.submit_template_for_approval()
 
     def submit_template_for_approval(self):
         """Submit the template to WhatsApp for approval"""
         try:
             # Get WhatsApp integration settings
-            settings = frappe.get_doc(
-                "OD WhatsApp Integration", "OD WhatsApp Integration"
-            )
+            settings = get_whatsapp_integration()
 
             if not settings.enabled:
                 return
@@ -126,9 +125,7 @@ class ODWhatsAppTemplate(Document):
         """Check the status of the template with WhatsApp"""
         try:
             # Get WhatsApp integration settings
-            settings = frappe.get_doc(
-                "OD WhatsApp Integration", "OD WhatsApp Integration"
-            )
+            settings = get_whatsapp_integration()
 
             if not settings.enabled:
                 return

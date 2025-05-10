@@ -6,6 +6,7 @@ import json
 import requests
 from frappe.model.document import Document
 from frappe.utils import now
+from on_desk.utils.whatsapp import get_whatsapp_integration
 
 
 class ODSocialMediaMessage(Document):
@@ -29,16 +30,9 @@ class ODSocialMediaMessage(Document):
 
         try:
             # Get WhatsApp integration settings
-            if not frappe.db.exists(
-                "OD WhatsApp Integration", "OD WhatsApp Integration"
-            ):
-                return
+            settings = get_whatsapp_integration()
 
-            settings = frappe.get_doc(
-                "OD WhatsApp Integration", "OD WhatsApp Integration"
-            )
-
-            if not settings.enabled:
+            if not settings or not settings.enabled:
                 return
 
             # Only Meta provider supports message status check via API
@@ -93,16 +87,9 @@ class ODSocialMediaMessage(Document):
 
         try:
             # Get WhatsApp integration settings
-            if not frappe.db.exists(
-                "OD WhatsApp Integration", "OD WhatsApp Integration"
-            ):
-                return
+            settings = get_whatsapp_integration()
 
-            settings = frappe.get_doc(
-                "OD WhatsApp Integration", "OD WhatsApp Integration"
-            )
-
-            if not settings.enabled:
+            if not settings or not settings.enabled:
                 return
 
             # Only Meta provider supports media download via API
@@ -246,10 +233,7 @@ def send_whatsapp_message_from_ticket(
         frappe.throw("No phone number found for the ticket contact")
 
     # Send the WhatsApp message
-    if not frappe.db.exists("OD WhatsApp Integration", "OD WhatsApp Integration"):
-        frappe.throw("WhatsApp integration is not configured")
-
-    settings = frappe.get_doc("OD WhatsApp Integration", "OD WhatsApp Integration")
+    settings = get_whatsapp_integration(throw_if_not_found=True)
     response = settings.send_message(phone_number, message, template, template_params)
 
     if response:
