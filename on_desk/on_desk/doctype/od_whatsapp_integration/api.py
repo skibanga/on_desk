@@ -14,74 +14,12 @@ from on_desk.utils.whatsapp import get_whatsapp_integration
 def webhook():
     """Handle WhatsApp webhook requests"""
     if frappe.request.method == "GET":
-        # Handle verification directly in the main webhook function
-        try:
-            # Get the WhatsApp integration settings
-            settings = get_whatsapp_integration(throw_if_not_found=True)
-
-            # Get query parameters
-            mode = frappe.form_dict.get("hub.mode")
-            token = frappe.form_dict.get("hub.verify_token")
-            challenge = frappe.form_dict.get("hub.challenge")
-
-            # Log the parameters - use correct parameter order (title, message)
-            frappe.log_error(
-                "WhatsApp Verification",
-                f"Parameters: mode={mode}, token={token}, challenge={challenge}",
-            )
-
-            # Verify the token
-            if mode == "subscribe" and token == settings.webhook_verify_token:
-                # Return the raw challenge value without JSON wrapping
-                frappe.local.response.http_status_code = 200
-                frappe.local.response.message = None
-                frappe.local.response.data = challenge
-
-                # Log what we're returning
-                frappe.log_error(
-                    "WhatsApp Success", f"Returning challenge: {challenge}"
-                )
-
-                # Try a more direct approach - print the challenge directly
-                print(challenge)
-                return challenge
-
-            frappe.throw(_("Verification failed"))
-        except Exception as e:
-            frappe.log_error("WhatsApp Error", str(e))
-            frappe.throw(_("Verification failed"))
+        # For backward compatibility, redirect to raw_verify
+        return raw_verify()
     elif frappe.request.method == "POST":
         return handle_incoming_message()
     else:
         frappe.throw(_("Method not allowed"), frappe.PermissionError)
-
-
-def handle_verification():
-    """Handle webhook verification from Meta"""
-    try:
-        # Get the WhatsApp integration settings
-        settings = get_whatsapp_integration(throw_if_not_found=True)
-
-        # Get query parameters
-        mode = frappe.form_dict.get("hub.mode")
-        token = frappe.form_dict.get("hub.verify_token")
-        challenge = frappe.form_dict.get("hub.challenge")
-
-        # Verify the token
-        if mode == "subscribe" and token == settings.webhook_verify_token:
-            # Return the raw challenge value without JSON wrapping
-            frappe.local.response.http_status_code = 200
-            frappe.local.response.message = None
-            frappe.local.response.data = challenge
-            return challenge
-
-        frappe.throw(_("Verification failed"))
-    except Exception as e:
-        frappe.log_error(
-            f"WhatsApp Webhook Verification Error: {str(e)}",
-            "WhatsApp Webhook Error",
-        )
-        frappe.throw(_("Verification failed"))
 
 
 def handle_incoming_message():
@@ -398,7 +336,7 @@ def process_pending_messages():
 
 @frappe.whitelist(allow_guest=True)
 def raw_verify():
-    """Ultra simple endpoint for WhatsApp webhook verification that bypasses Frappe's response handling"""
+    """WhatsApp webhook verification endpoint that returns the challenge as plain text"""
     try:
         # Get the WhatsApp integration settings
         settings = get_whatsapp_integration(throw_if_not_found=True)
@@ -408,61 +346,14 @@ def raw_verify():
         token = frappe.request.args.get("hub.verify_token")
         challenge = frappe.request.args.get("hub.challenge")
 
-        # Log the parameters - use correct parameter order (title, message)
-        frappe.log_error(
-            "WhatsApp Verification",
-            f"Parameters: mode={mode}, token={token}, challenge={challenge}",
-        )
-
         # Verify the token
         if mode == "subscribe" and token == settings.webhook_verify_token:
-            # Return the challenge directly
+            # Return the challenge directly as plain text
             from werkzeug.wrappers import Response
 
-            response = Response(challenge, status=200, content_type="text/plain")
-            frappe.log_error("WhatsApp Success", f"Returning challenge: {challenge}")
-            return response
+            return Response(challenge, status=200, content_type="text/plain")
 
-        frappe.log_error("WhatsApp Failed", "Token verification failed")
         return "Verification failed"
     except Exception as e:
-        frappe.log_error("WhatsApp Error", str(e))
+        frappe.log_error("WhatsApp Verification Error", str(e))
         return "Error"
-
-
-@frappe.whitelist(allow_guest=True)
-def verify():
-    """Dedicated endpoint for WhatsApp webhook verification"""
-    try:
-        # Get the WhatsApp integration settings
-        settings = get_whatsapp_integration(throw_if_not_found=True)
-
-        # Get query parameters
-        mode = frappe.form_dict.get("hub.mode")
-        token = frappe.form_dict.get("hub.verify_token")
-        challenge = frappe.form_dict.get("hub.challenge")
-
-        # Log the parameters - use correct parameter order (title, message)
-        frappe.log_error(
-            "WhatsApp Verification",
-            f"Parameters: mode={mode}, token={token}, challenge={challenge}",
-        )
-
-        # Verify the token
-        if mode == "subscribe" and token == settings.webhook_verify_token:
-            # Return the raw challenge value without JSON wrapping
-            frappe.local.response.http_status_code = 200
-            frappe.local.response.message = None
-            frappe.local.response.data = challenge
-
-            # Log what we're returning
-            frappe.log_error("WhatsApp Success", f"Returning challenge: {challenge}")
-
-            # Try a more direct approach - print the challenge directly
-            print(challenge)
-            return challenge
-
-        frappe.throw(_("Verification failed"))
-    except Exception as e:
-        frappe.log_error("WhatsApp Error", str(e))
-        frappe.throw(_("Verification failed"))
