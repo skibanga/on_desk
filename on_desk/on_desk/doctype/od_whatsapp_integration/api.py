@@ -408,7 +408,7 @@ def verify():
         frappe.throw(_("Verification failed"))
     except Exception as e:
         frappe.log_error(
-            f"WhatsApp Webhook Verification Error: {str(e)}",
             "WhatsApp Webhook Error",
+            f"WhatsApp Webhook Verification Error: {str(e)}",
         )
         frappe.throw(_("Verification failed"))
