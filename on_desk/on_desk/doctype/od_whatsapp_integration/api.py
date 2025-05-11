@@ -13,31 +13,6 @@ from on_desk.utils.whatsapp import get_whatsapp_integration
 @frappe.whitelist(allow_guest=True)
 def webhook():
     """Handle WhatsApp webhook requests"""
-    # Log all request details for debugging
-    try:
-        request_details = {
-            "method": frappe.request.method,
-            "form_dict": frappe.form_dict,
-            "args": dict(frappe.request.args),
-            "query_string": (
-                frappe.request.query_string.decode("utf-8")
-                if frappe.request.query_string
-                else None
-            ),
-            "headers": dict(frappe.request.headers),
-            "data": (
-                frappe.request.data.decode("utf-8") if frappe.request.data else None
-            ),
-        }
-        frappe.log_error(
-            f"WhatsApp Webhook Request Details: {json.dumps(request_details, indent=2)}",
-            "WhatsApp Webhook Debug",
-        )
-    except Exception as e:
-        frappe.log_error(
-            f"Error logging request details: {str(e)}", "WhatsApp Webhook Debug"
-        )
-
     if frappe.request.method == "GET":
         # Handle verification directly in the main webhook function
         try:
@@ -49,10 +24,10 @@ def webhook():
             token = frappe.form_dict.get("hub.verify_token")
             challenge = frappe.form_dict.get("hub.challenge")
 
-            # Log the extracted parameters
+            # Log the parameters - use correct parameter order (title, message)
             frappe.log_error(
-                f"WhatsApp Webhook Parameters: mode={mode}, token={token}, challenge={challenge}",
-                "WhatsApp Webhook Debug",
+                "WhatsApp Verification",
+                f"Parameters: mode={mode}, token={token}, challenge={challenge}",
             )
 
             # Verify the token
@@ -64,8 +39,7 @@ def webhook():
 
                 # Log what we're returning
                 frappe.log_error(
-                    f"WhatsApp Webhook Response: status=200, data={challenge}",
-                    "WhatsApp Webhook Debug",
+                    "WhatsApp Success", f"Returning challenge: {challenge}"
                 )
 
                 # Try a more direct approach - print the challenge directly
@@ -74,10 +48,7 @@ def webhook():
 
             frappe.throw(_("Verification failed"))
         except Exception as e:
-            frappe.log_error(
-                f"WhatsApp Webhook Verification Error: {str(e)}",
-                "WhatsApp Webhook Error",
-            )
+            frappe.log_error("WhatsApp Error", str(e))
             frappe.throw(_("Verification failed"))
     elif frappe.request.method == "POST":
         return handle_incoming_message()
@@ -432,21 +403,15 @@ def raw_verify():
         # Get the WhatsApp integration settings
         settings = get_whatsapp_integration(throw_if_not_found=True)
 
-        # Log all request details
-        frappe.log_error(
-            f"Raw Verify Request: method={frappe.request.method}, args={dict(frappe.request.args)}, form={frappe.form_dict}",
-            "WhatsApp Raw Verify",
-        )
-
         # Get query parameters directly from request args
         mode = frappe.request.args.get("hub.mode")
         token = frappe.request.args.get("hub.verify_token")
         challenge = frappe.request.args.get("hub.challenge")
 
-        # Log the parameters
+        # Log the parameters - use correct parameter order (title, message)
         frappe.log_error(
-            f"Raw Verify Parameters: mode={mode}, token={token}, challenge={challenge}",
-            "WhatsApp Raw Verify",
+            "WhatsApp Verification",
+            f"Parameters: mode={mode}, token={token}, challenge={challenge}",
         )
 
         # Verify the token
@@ -455,15 +420,13 @@ def raw_verify():
             from werkzeug.wrappers import Response
 
             response = Response(challenge, status=200, content_type="text/plain")
-            frappe.log_error(f"Raw Verify Response: {challenge}", "WhatsApp Raw Verify")
+            frappe.log_error("WhatsApp Success", f"Returning challenge: {challenge}")
             return response
 
-        frappe.log_error(
-            "Raw Verify Failed: Token verification failed", "WhatsApp Raw Verify"
-        )
+        frappe.log_error("WhatsApp Failed", "Token verification failed")
         return "Verification failed"
     except Exception as e:
-        frappe.log_error(f"Raw Verify Error: {str(e)}", "WhatsApp Raw Verify")
+        frappe.log_error("WhatsApp Error", str(e))
         return "Error"
 
 
@@ -471,26 +434,6 @@ def raw_verify():
 def verify():
     """Dedicated endpoint for WhatsApp webhook verification"""
     try:
-        # Log all request details for debugging
-        request_details = {
-            "method": frappe.request.method,
-            "form_dict": frappe.form_dict,
-            "args": dict(frappe.request.args),
-            "query_string": (
-                frappe.request.query_string.decode("utf-8")
-                if frappe.request.query_string
-                else None
-            ),
-            "headers": dict(frappe.request.headers),
-            "data": (
-                frappe.request.data.decode("utf-8") if frappe.request.data else None
-            ),
-        }
-        frappe.log_error(
-            f"WhatsApp Webhook Request Details: {json.dumps(request_details, indent=2)}",
-            "WhatsApp Webhook Debug",
-        )
-
         # Get the WhatsApp integration settings
         settings = get_whatsapp_integration(throw_if_not_found=True)
 
@@ -499,10 +442,10 @@ def verify():
         token = frappe.form_dict.get("hub.verify_token")
         challenge = frappe.form_dict.get("hub.challenge")
 
-        # Log the extracted parameters
+        # Log the parameters - use correct parameter order (title, message)
         frappe.log_error(
-            f"WhatsApp Webhook Parameters: mode={mode}, token={token}, challenge={challenge}",
-            "WhatsApp Webhook Debug",
+            "WhatsApp Verification",
+            f"Parameters: mode={mode}, token={token}, challenge={challenge}",
         )
 
         # Verify the token
@@ -513,10 +456,7 @@ def verify():
             frappe.local.response.data = challenge
 
             # Log what we're returning
-            frappe.log_error(
-                f"WhatsApp Webhook Response: status=200, data={challenge}",
-                "WhatsApp Webhook Debug",
-            )
+            frappe.log_error("WhatsApp Success", f"Returning challenge: {challenge}")
 
             # Try a more direct approach - print the challenge directly
             print(challenge)
@@ -524,7 +464,5 @@ def verify():
 
         frappe.throw(_("Verification failed"))
     except Exception as e:
-        frappe.log_error(
-            f"WhatsApp Webhook Verification Error: {str(e)}", "WhatsApp Webhook Error"
-        )
+        frappe.log_error("WhatsApp Error", str(e))
         frappe.throw(_("Verification failed"))

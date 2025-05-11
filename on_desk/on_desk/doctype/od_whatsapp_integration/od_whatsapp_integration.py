@@ -16,7 +16,8 @@ class ODWhatsAppIntegration(Document):
     def set_webhook_url(self):
         """Set the webhook URL based on the site URL"""
         site_url = get_url()
-        self.webhook_url = f"{site_url}/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.api.webhook"
+        # Use the raw_verify endpoint for webhook verification
+        self.webhook_url = f"{site_url}/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.api.raw_verify"
 
     def send_message(self, to_number, message, template=None, template_params=None):
         """Send a WhatsApp message using the configured provider"""
