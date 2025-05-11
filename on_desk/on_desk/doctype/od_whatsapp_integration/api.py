@@ -26,7 +26,10 @@ def webhook():
 
             # Verify the token
             if mode == "subscribe" and token == settings.webhook_verify_token:
-                # Return the challenge directly without any processing
+                # Return the raw challenge value without JSON wrapping
+                frappe.local.response.http_status_code = 200
+                frappe.local.response.message = None
+                frappe.local.response.data = challenge
                 return challenge
 
             frappe.throw(_("Verification failed"))
@@ -43,13 +46,31 @@ def webhook():
 
 
 def handle_verification():
-    """Handle webhook verification from Meta - DEPRECATED, now handled in webhook() directly"""
-    # This function is kept for backward compatibility but is no longer used
-    frappe.throw(
-        _(
-            "This function is deprecated. Verification is now handled directly in the webhook function."
+    """Handle webhook verification from Meta"""
+    try:
+        # Get the WhatsApp integration settings
+        settings = get_whatsapp_integration(throw_if_not_found=True)
+
+        # Get query parameters
+        mode = frappe.form_dict.get("hub.mode")
+        token = frappe.form_dict.get("hub.verify_token")
+        challenge = frappe.form_dict.get("hub.challenge")
+
+        # Verify the token
+        if mode == "subscribe" and token == settings.webhook_verify_token:
+            # Return the raw challenge value without JSON wrapping
+            frappe.local.response.http_status_code = 200
+            frappe.local.response.message = None
+            frappe.local.response.data = challenge
+            return challenge
+
+        frappe.throw(_("Verification failed"))
+    except Exception as e:
+        frappe.log_error(
+            f"WhatsApp Webhook Verification Error: {str(e)}",
+            "WhatsApp Webhook Error",
         )
-    )
+        frappe.throw(_("Verification failed"))
 
 
 def handle_incoming_message():
@@ -362,3 +383,32 @@ def process_pending_messages():
     """Process any pending WhatsApp messages (scheduled task)"""
     # This function can be used to retry failed messages or process queued messages
     pass
+
+
+@frappe.whitelist(allow_guest=True)
+def verify():
+    """Dedicated endpoint for WhatsApp webhook verification"""
+    try:
+        # Get the WhatsApp integration settings
+        settings = get_whatsapp_integration(throw_if_not_found=True)
+
+        # Get query parameters
+        mode = frappe.form_dict.get("hub.mode")
+        token = frappe.form_dict.get("hub.verify_token")
+        challenge = frappe.form_dict.get("hub.challenge")
+
+        # Verify the token
+        if mode == "subscribe" and token == settings.webhook_verify_token:
+            # Return the raw challenge value without JSON wrapping
+            frappe.local.response.http_status_code = 200
+            frappe.local.response.message = None
+            frappe.local.response.data = challenge
+            return challenge
+
+        frappe.throw(_("Verification failed"))
+    except Exception as e:
+        frappe.log_error(
+            f"WhatsApp Webhook Verification Error: {str(e)}",
+            "WhatsApp Webhook Error",
+        )
+        frappe.throw(_("Verification failed"))
