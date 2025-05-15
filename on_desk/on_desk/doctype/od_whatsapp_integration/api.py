@@ -78,7 +78,7 @@ def verify_meta_signature(settings):
         return
 
     # Get the API secret - skip verification if not configured
-    api_secret = settings.get_password("api_secret")
+    api_secret = settings.api_secret
     if not api_secret:
         frappe.log_error(
             message="API Secret not configured, skipping signature verification",
