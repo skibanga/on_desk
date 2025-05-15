@@ -12,14 +12,12 @@ from on_desk.utils.whatsapp import get_whatsapp_integration
 
 @frappe.whitelist(allow_guest=True)
 def webhook():
-    """Handle WhatsApp webhook requests"""
-    if frappe.request.method == "GET":
-        # For backward compatibility, redirect to raw_verify
-        return raw_verify()
-    elif frappe.request.method == "POST":
-        return handle_incoming_message()
-    else:
-        frappe.throw(_("Method not allowed"), frappe.PermissionError)
+    """
+    Legacy webhook handler - redirects to raw_verify for backward compatibility.
+    New implementations should use raw_verify directly.
+    """
+    # For backward compatibility, redirect all requests to raw_verify
+    return raw_verify()
 
 
 def handle_incoming_message():
@@ -336,7 +334,27 @@ def process_pending_messages():
 
 @frappe.whitelist(allow_guest=True)
 def raw_verify():
-    """WhatsApp webhook verification endpoint that returns the challenge as plain text"""
+    """
+    WhatsApp webhook endpoint that handles both verification (GET) and incoming messages (POST).
+    This is the main entry point for all WhatsApp webhook requests.
+    """
+    try:
+        # Handle different HTTP methods
+        if frappe.request.method == "GET":
+            # This is a verification request
+            return handle_verification()
+        elif frappe.request.method == "POST":
+            # This is an incoming message or status update
+            return handle_incoming_message()
+        else:
+            frappe.throw(_("Method not allowed"), frappe.PermissionError)
+    except Exception as e:
+        frappe.log_error(f"WhatsApp Webhook Error: {str(e)}", "WhatsApp Webhook Error")
+        return "Error"
+
+
+def handle_verification():
+    """Handle WhatsApp webhook verification challenge"""
     try:
         # Get the WhatsApp integration settings
         settings = get_whatsapp_integration(throw_if_not_found=True)
@@ -355,5 +373,7 @@ def raw_verify():
 
         return "Verification failed"
     except Exception as e:
-        frappe.log_error("WhatsApp Verification Error", str(e))
+        frappe.log_error(
+            f"WhatsApp Verification Error: {str(e)}", "WhatsApp Verification Error"
+        )
         return "Error"
