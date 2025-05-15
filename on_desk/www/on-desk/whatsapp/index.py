@@ -157,16 +157,17 @@ def get_whatsapp_messages(phone_number):
     if not phone_number:
         return []
 
-    # Get messages for this phone number
-    messages = frappe.get_all(
-        "OD Social Media Message",
-        filters=[
-            ["channel", "=", "WhatsApp"],
-            ["from_number", "=", phone_number],
-            ["to_number", "=", phone_number],
-        ],
-        fields=["message", "creation", "direction", "status", "message_id"],
-        order_by="creation asc",
+    # Get messages for this phone number (both incoming and outgoing)
+    messages = frappe.db.sql(
+        """
+        SELECT message, creation, direction, status, message_id
+        FROM `tabOD Social Media Message`
+        WHERE channel = 'WhatsApp'
+        AND (from_number = %s OR to_number = %s)
+        ORDER BY creation ASC
+    """,
+        (phone_number, phone_number),
+        as_dict=1,
     )
 
     formatted_messages = []

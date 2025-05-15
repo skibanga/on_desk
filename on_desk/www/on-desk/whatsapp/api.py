@@ -104,17 +104,24 @@ def get_conversation_messages(phone_number):
     if not phone_number:
         return []
 
-    # Get messages for this phone number
-    messages = frappe.get_all(
-        "OD Social Media Message",
-        filters=[
-            ["channel", "=", "WhatsApp"],
-            ["from_number", "=", phone_number],
-            ["to_number", "=", phone_number],
-        ],
-        fields=["message", "creation", "direction", "status", "message_id"],
-        order_by="creation asc",
+    frappe.log_error(
+        f"Getting messages for phone number: {phone_number}", "WhatsApp Debug"
     )
+
+    # Get messages for this phone number (both incoming and outgoing)
+    messages = frappe.db.sql(
+        """
+        SELECT message, creation, direction, status, message_id
+        FROM `tabOD Social Media Message`
+        WHERE channel = 'WhatsApp'
+        AND (from_number = %s OR to_number = %s)
+        ORDER BY creation ASC
+    """,
+        (phone_number, phone_number),
+        as_dict=1,
+    )
+
+    frappe.log_error(f"Found {len(messages)} messages", "WhatsApp Debug")
 
     formatted_messages = []
 
@@ -136,19 +143,47 @@ def get_conversation_messages(phone_number):
 def send_message(phone_number, message):
     """Send a WhatsApp message to a specific phone number"""
     if not phone_number or not message:
+        frappe.log_error("Missing phone number or message", "WhatsApp Debug")
         return {"success": False, "error": "Phone number and message are required"}
+
+    frappe.log_error(f"Sending message to {phone_number}: {message}", "WhatsApp Debug")
 
     try:
         # Get WhatsApp integration settings
         settings = get_whatsapp_integration(throw_if_not_found=True)
+        frappe.log_error(f"Got WhatsApp settings: {settings.name}", "WhatsApp Debug")
 
         # Send the message
         response = settings.send_message(phone_number, message)
+        frappe.log_error(f"Send message response: {response}", "WhatsApp Debug")
 
         if response:
             message_id = response.get("messages", [{}])[0].get("id", "")
+            frappe.log_error(f"Message sent with ID: {message_id}", "WhatsApp Debug")
+
+            # Create a record in OD Social Media Message
+            try:
+                msg = frappe.new_doc("OD Social Media Message")
+                msg.channel = "WhatsApp"
+                msg.direction = "Outgoing"
+                msg.from_number = settings.phone_number
+                msg.to_number = phone_number
+                msg.message = message
+                msg.message_id = message_id
+                msg.status = "Sent"
+                msg.insert(ignore_permissions=True)
+                frappe.db.commit()
+                frappe.log_error(
+                    f"Created message record: {msg.name}", "WhatsApp Debug"
+                )
+            except Exception as e:
+                frappe.log_error(
+                    f"Failed to create message record: {str(e)}", "WhatsApp Debug"
+                )
+
             return {"success": True, "message_id": message_id}
         else:
+            frappe.log_error("Failed to send message: No response", "WhatsApp Debug")
             return {"success": False, "error": "Failed to send message"}
     except Exception as e:
         frappe.log_error(f"WhatsApp Send Message Error: {str(e)}", "WhatsApp API Error")
