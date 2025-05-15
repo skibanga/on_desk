@@ -162,9 +162,10 @@ def get_whatsapp_messages(phone_number):
         "OD Social Media Message",
         filters=[
             ["channel", "=", "WhatsApp"],
-            ["from_number", "=", phone_number, "to_number", "=", phone_number],
+            ["from_number", "=", phone_number],
+            ["to_number", "=", phone_number],
         ],
-        fields=["message", "creation", "direction", "status"],
+        fields=["message", "creation", "direction", "status", "message_id"],
         order_by="creation asc",
     )
 
@@ -177,6 +178,7 @@ def get_whatsapp_messages(phone_number):
                 "time": pretty_date(message.creation),
                 "direction": message.direction,
                 "status": message.status,
+                "message_id": message.message_id,
             }
         )
 

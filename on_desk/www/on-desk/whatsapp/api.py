@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import now, get_datetime, pretty_date
+from frappe.utils import pretty_date
 from on_desk.utils.whatsapp import get_whatsapp_integration
 
 
@@ -109,7 +109,8 @@ def get_conversation_messages(phone_number):
         "OD Social Media Message",
         filters=[
             ["channel", "=", "WhatsApp"],
-            ["from_number", "=", phone_number, "to_number", "=", phone_number],
+            ["from_number", "=", phone_number],
+            ["to_number", "=", phone_number],
         ],
         fields=["message", "creation", "direction", "status", "message_id"],
         order_by="creation asc",
