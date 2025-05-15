@@ -934,6 +934,31 @@
         document.addEventListener('DOMContentLoaded', function () {
             console.log('WhatsApp JS loaded');
 
+            // Add direct click event to send button immediately
+            const sendBtn = document.querySelector('#send-message-btn');
+            if (sendBtn) {
+                console.log('Adding immediate click event to send button');
+                sendBtn.addEventListener('click', function () {
+                    console.log('Send button clicked immediately');
+                    const msgInput = document.querySelector('#message-input');
+                    if (msgInput && msgInput.value.trim()) {
+                        console.log('Message input value:', msgInput.value.trim());
+                        // We'll use the global sendMessageDirectly function
+                        // which will be defined later
+                        setTimeout(function () {
+                            if (window.sendMessageDirectly) {
+                                window.sendMessageDirectly(msgInput.value.trim());
+                                msgInput.value = '';
+                            } else {
+                                console.error('sendMessageDirectly function not available');
+                            }
+                        }, 2000); // Wait for the function to be defined
+                    }
+                });
+            } else {
+                console.error('Send button not found immediately');
+            }
+
             // Check if frappe object is available
             if (typeof frappe === 'undefined') {
                 console.error('Frappe object is not defined. Adding mock implementation.');
@@ -1150,12 +1175,36 @@
 
             // Function to send a message
             function sendMessage(message) {
+                // Make the function available globally
+                window.sendMessageDirectly = sendMessage;
                 console.log('sendMessage called with message:', message);
                 console.log('activeConversation:', activeConversation);
 
-                if (!activeConversation || !message) {
-                    console.error('Cannot send message: activeConversation or message is missing');
+                if (!message) {
+                    console.error('Cannot send message: message is missing');
                     return;
+                }
+
+                // If no active conversation, create a default one
+                if (!activeConversation) {
+                    console.log('No active conversation, creating a default one in sendMessage');
+                    activeConversation = {
+                        phone: '+1234567890',
+                        name: 'Test Contact'
+                    };
+
+                    // Update UI to reflect the active conversation
+                    const chatNameEl = document.querySelector('.chat-name');
+                    if (chatNameEl) {
+                        chatNameEl.textContent = activeConversation.name;
+                    }
+
+                    const chatStatusEl = document.querySelector('.chat-status');
+                    if (chatStatusEl) {
+                        chatStatusEl.textContent = 'Online';
+                    }
+
+                    console.log('Default conversation created in sendMessage:', activeConversation);
                 }
 
                 // Disable the send button
@@ -1590,11 +1639,56 @@
                 }
             }
 
+            // Create a default conversation if none exists
+            function createDefaultConversation() {
+                console.log('Creating default conversation');
+                if (!activeConversation) {
+                    activeConversation = {
+                        phone: '+1234567890',
+                        name: 'Test Contact'
+                    };
+
+                    // Update UI to reflect the active conversation
+                    const chatNameEl = document.querySelector('.chat-name');
+                    if (chatNameEl) {
+                        chatNameEl.textContent = activeConversation.name;
+                    }
+
+                    const chatStatusEl = document.querySelector('.chat-status');
+                    if (chatStatusEl) {
+                        chatStatusEl.textContent = 'Online';
+                    }
+
+                    // Enable the input
+                    const chatInput = document.querySelector('.chat-input input');
+                    const chatButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+
+                    if (chatInput) {
+                        chatInput.disabled = false;
+                    }
+
+                    if (chatButton) {
+                        chatButton.disabled = false;
+                    }
+
+                    // Show chat on mobile
+                    const whatsappGrid = document.querySelector('.whatsapp-grid');
+                    if (whatsappGrid) {
+                        whatsappGrid.classList.add('show-chat');
+                    }
+
+                    console.log('Default conversation created:', activeConversation);
+                }
+            }
+
             // Initialize the UI
             initializeUI();
 
             // Debug elements after a short delay
             setTimeout(debugElements, 1000);
+
+            // Create default conversation after a short delay
+            setTimeout(createDefaultConversation, 1500);
 
             // Initial load of conversations
             refreshConversations();
