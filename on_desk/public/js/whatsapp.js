@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Function to load conversation messages
     function loadConversation(phoneNumber, contactName) {
+        console.log('Loading conversation for:', phoneNumber, contactName);
+
         // Clear any existing status update interval
         if (messageStatusInterval) {
             clearInterval(messageStatusInterval);
@@ -21,18 +23,49 @@ document.addEventListener('DOMContentLoaded', function () {
             phone: phoneNumber,
             name: contactName
         };
+        console.log('Active conversation set:', activeConversation);
 
         // Update UI
-        document.querySelector('.chat-name').textContent = contactName;
-        document.querySelector('.chat-status').textContent = 'Loading...';
+        const chatNameEl = document.querySelector('.chat-name');
+        const chatStatusEl = document.querySelector('.chat-status');
+
+        if (chatNameEl) {
+            chatNameEl.textContent = contactName;
+        } else {
+            console.error('Chat name element not found');
+        }
+
+        if (chatStatusEl) {
+            chatStatusEl.textContent = 'Loading...';
+        } else {
+            console.error('Chat status element not found');
+        }
 
         // Enable the input
-        document.querySelector('.chat-input input').disabled = false;
-        document.querySelector('.chat-input button').disabled = false;
+        const chatInput = document.querySelector('.chat-input input');
+        const chatButton = document.querySelector('#send-message-btn');
+
+        if (chatInput) {
+            chatInput.disabled = false;
+        } else {
+            console.error('Chat input element not found');
+        }
+
+        if (chatButton) {
+            chatButton.disabled = false;
+        } else {
+            console.error('Chat button element not found');
+        }
 
         // Show chat on mobile
-        document.querySelector('.whatsapp-grid').classList.add('show-chat');
+        const whatsappGrid = document.querySelector('.whatsapp-grid');
+        if (whatsappGrid) {
+            whatsappGrid.classList.add('show-chat');
+        } else {
+            console.error('WhatsApp grid element not found');
+        }
 
+        console.log('Fetching messages for phone number:', phoneNumber);
         // Fetch messages
         frappe.call({
             method: 'on_desk.on_desk.www.on-desk.whatsapp.api.get_conversation_messages',
@@ -40,12 +73,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 phone_number: phoneNumber
             },
             callback: function (response) {
+                console.log('API response for messages:', response);
+
                 if (response.message) {
                     renderMessages(response.message);
-                    document.querySelector('.chat-status').textContent = 'Online';
+
+                    if (chatStatusEl) {
+                        chatStatusEl.textContent = 'Online';
+                    }
 
                     // Start polling for message status updates
                     startMessageStatusUpdates();
+                } else {
+                    console.error('No messages returned from API');
                 }
             }
         });
@@ -53,10 +93,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Function to render messages
     function renderMessages(messages) {
-        const messagesContainer = document.querySelector('.chat-messages');
+        console.log('Rendering messages:', messages);
+
+        const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
+        console.log('Messages container:', messagesContainer);
+
+        if (!messagesContainer) {
+            console.error('Messages container not found');
+            return;
+        }
+
         messagesContainer.innerHTML = '';
 
         if (messages.length === 0) {
+            console.log('No messages to display');
             const emptyState = document.createElement('div');
             emptyState.classList.add('empty-state');
             emptyState.innerHTML = `
@@ -70,13 +120,17 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        console.log('Adding date divider');
         // Add date divider
         const dateDivider = document.createElement('div');
         dateDivider.classList.add('date-divider');
         dateDivider.textContent = 'Today';
         messagesContainer.appendChild(dateDivider);
 
+        console.log('Adding message elements');
         messages.forEach(message => {
+            console.log('Processing message:', message);
+
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
             messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
@@ -117,21 +171,34 @@ document.addEventListener('DOMContentLoaded', function () {
             messagesContainer.appendChild(messageElement);
         });
 
+        console.log('Scrolling to bottom');
         // Scroll to bottom
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
     // Function to send a message
     function sendMessage(message) {
-        if (!activeConversation || !message) return;
+        console.log('sendMessage called with message:', message);
+        console.log('activeConversation:', activeConversation);
+
+        if (!activeConversation || !message) {
+            console.error('Cannot send message: activeConversation or message is missing');
+            return;
+        }
 
         // Disable the send button
-        const sendButton = document.querySelector('.chat-input button');
-        sendButton.disabled = true;
-        sendButton.innerHTML = '<i class="uil uil-spinner-alt fa-spin"></i>';
+        const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+        console.log('Send button for disabling:', sendButton);
+
+        if (sendButton) {
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<i class="uil uil-spinner-alt fa-spin"></i>';
+        }
 
         // Add temporary message to UI
-        const messagesContainer = document.querySelector('.chat-messages');
+        const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
+        console.log('Messages container:', messagesContainer);
+
         const tempId = 'temp-' + Date.now();
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', 'message-outgoing');
@@ -144,11 +211,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 <i class="uil uil-spinner-alt fa-spin status-icon"></i>
             </div>
         `;
-        messagesContainer.appendChild(messageElement);
 
-        // Scroll to bottom
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        if (messagesContainer) {
+            messagesContainer.appendChild(messageElement);
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } else {
+            console.error('Messages container not found');
+        }
 
+        console.log('Calling API to send message');
         // Send the message via API
         frappe.call({
             method: 'on_desk.on_desk.www.on-desk.whatsapp.api.send_message',
@@ -157,11 +229,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 message: message
             },
             callback: function (response) {
+                console.log('API response:', response);
+
                 // Re-enable the send button
-                sendButton.disabled = false;
-                sendButton.innerHTML = '<i class="uil uil-message"></i>';
+                const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                if (sendButton) {
+                    sendButton.disabled = false;
+                    sendButton.innerHTML = '<i class="uil uil-message"></i>';
+                }
 
                 if (response.message && response.message.success) {
+                    console.log('Message sent successfully with ID:', response.message.message_id);
+
                     // Update the temporary message with the real message ID
                     const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
                     if (tempMessage) {
@@ -170,11 +249,15 @@ document.addEventListener('DOMContentLoaded', function () {
                             <span>Sent</span>
                             <i class="uil uil-check status-icon status-sent"></i>
                         `;
+                    } else {
+                        console.error('Temporary message element not found');
                     }
 
                     // Start polling for status updates
                     startMessageStatusUpdates();
                 } else {
+                    console.error('Failed to send message:', response);
+
                     // Show error
                     const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
                     if (tempMessage) {
@@ -196,20 +279,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize the UI event handlers
     function initializeUI() {
+        console.log('Initializing UI event handlers');
+
         // Set up conversation click handlers
         setupConversationClickHandlers();
 
         // Set up send message handler
-        const sendButton = document.querySelector('#send-message-btn');
-        const messageInput = document.querySelector('#message-input');
+        let sendButton = document.querySelector('#send-message-btn');
+        console.log('Send button:', sendButton);
 
-        sendButton.addEventListener('click', function () {
-            const message = messageInput.value.trim();
-            if (message) {
-                sendMessage(message);
-                messageInput.value = '';
+        // If we can't find the button by ID, try to find it by its position in the chat-input
+        if (!sendButton) {
+            const chatInput = document.querySelector('.chat-input');
+            if (chatInput) {
+                const button = chatInput.querySelector('button');
+                if (button) {
+                    console.log('Found send button by position:', button);
+                    button.id = 'send-message-btn';  // Add the ID for future reference
+                    sendButton = button;
+                }
             }
-        });
+        }
+
+        const messageInput = document.querySelector('#message-input');
+        console.log('Message input:', messageInput);
+
+        if (sendButton) {
+            console.log('Adding click event listener to send button');
+            sendButton.addEventListener('click', function () {
+                console.log('Send button clicked');
+                const message = messageInput.value.trim();
+                console.log('Message:', message);
+                if (message) {
+                    sendMessage(message);
+                    messageInput.value = '';
+                }
+            });
+        } else {
+            console.error('Send button not found!');
+        }
 
         // Allow sending with Enter key
         messageInput.addEventListener('keypress', function (e) {
