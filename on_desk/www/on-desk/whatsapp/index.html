@@ -11,6 +11,8 @@
             display: grid;
             grid-template-columns: 1fr 2fr;
             gap: 1.5rem;
+            height: calc(100vh - 200px);
+            min-height: 600px;
         }
 
         .whatsapp-card {
@@ -19,6 +21,9 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
             overflow: hidden;
             border: 1px solid var(--border-color);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .card-header {
@@ -28,23 +33,56 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            background-color: var(--bg-card);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .search-container {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 60px;
+            background-color: var(--bg-card);
+            z-index: 9;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border-radius: 1.5rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+            font-size: 0.875rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
         }
 
         .card-body {
-            padding: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
         }
 
         .conversation-list {
             list-style: none;
+            margin: 0;
+            padding: 0;
         }
 
         .conversation-item {
             display: flex;
             align-items: center;
-            padding: 1rem;
+            padding: 0.75rem 1rem;
             border-bottom: 1px solid var(--border-color);
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
         }
 
         .conversation-item:hover {
@@ -66,15 +104,36 @@
             justify-content: center;
             font-weight: bold;
             margin-right: 1rem;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .conversation-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
         }
 
         .conversation-info {
             flex: 1;
+            min-width: 0;
+            /* Needed for text-overflow to work */
+        }
+
+        .conversation-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-left: 0.5rem;
         }
 
         .conversation-name {
             font-weight: 600;
             margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .conversation-preview {
@@ -83,19 +142,44 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 200px;
+            width: 100%;
         }
 
         .conversation-time {
             font-size: 0.75rem;
             color: var(--text-light);
-            margin-left: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .unread-badge {
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .online-indicator {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background-color: #25D366;
+            /* WhatsApp green */
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            border: 2px solid var(--bg-card);
         }
 
         .chat-container {
             display: flex;
             flex-direction: column;
-            height: 600px;
+            height: 100%;
         }
 
         .chat-header {
@@ -103,6 +187,10 @@
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
+            background-color: var(--bg-card);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .chat-avatar {
@@ -116,20 +204,52 @@
             justify-content: center;
             font-weight: bold;
             margin-right: 1rem;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .chat-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
         }
 
         .chat-info {
             flex: 1;
+            min-width: 0;
+            /* Needed for text-overflow to work */
         }
 
         .chat-name {
             font-weight: 600;
             margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .chat-status {
             font-size: 0.875rem;
             color: var(--text-light);
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .chat-action-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .chat-action-btn:hover {
+            color: var(--primary-color);
         }
 
         .chat-messages {
@@ -138,18 +258,24 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
+            background-color: var(--bg-dark);
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGZpbGw9IiMxZTI5M2IiIGQ9Ik0wIDBoMjAwdjIwMEgweiIvPjxjaXJjbGUgc3Ryb2tlPSIjMzM0MTU1IiBzdHJva2Utd2lkdGg9Ii41IiBjeD0iMTAwIiBjeT0iMTAwIiByPSI5OS43NSIvPjxwYXRoIGQ9Ik0xMDAgMjAwYzU1LjIyOCAwIDEwMC00NC43NzIgMTAwLTEwMFMxNTUuMjI4IDAgMTAwIDAgMCA0NC43NzIgMCAxMDBzNDQuNzcyIDEwMCAxMDAgMTAwem0wLTVjNTIuNDY3IDAgOTUtNDIuNTMzIDk1LTk1UzE1Mi40NjcgNSAxMDAgNSA1IDQ3LjUzMyA1IDEwMHM0Mi41MzMgOTUgOTUgOTV6IiBmaWxsPSIjMzM0MTU1IiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48Y2lyY2xlIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIuNSIgY3g9IjEwMCIgY3k9IjEwMCIgcj0iNjkuNzUiLz48cGF0aCBkPSJNMTAwIDE3MGMzOC42NiAwIDcwLTMxLjM0IDcwLTcwcy0zMS4zNC03MC03MC03MFMzMCA2MS4zNCAzMCAxMDBzMzEuMzQgNzAgNzAgNzB6bTAtNWMzNS44OTggMCA2NS0yOS4xMDIgNjUtNjVzLTI5LjEwMi02NS02NS02NS02NSAyOS4xMDItNjUgNjUgMjkuMTAyIDY1IDY1IDY1eiIgZmlsbD0iIzMzNDE1NSIgZmlsbC1ydWxlPSJub256ZXJvIi8+PC9nPjwvc3ZnPg==');
+            background-size: cover;
+            background-position: center;
         }
 
         .message {
             max-width: 70%;
             padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             margin-bottom: 1rem;
             position: relative;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            word-break: break-word;
         }
 
         .message-incoming {
-            background-color: var(--bg-dark);
+            background-color: var(--bg-card);
             align-self: flex-start;
             border-bottom-left-radius: 0;
         }
@@ -206,39 +332,408 @@
             border-top: 1px solid var(--border-color);
             display: flex;
             align-items: center;
+            background-color: var(--bg-card);
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        .chat-input-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
         }
 
         .chat-input input {
             flex: 1;
             padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
+            padding-right: 3rem;
+            border-radius: 1.5rem;
             border: 1px solid var(--border-color);
             background-color: var(--bg-dark);
             color: var(--text-dark);
             margin-right: 0.5rem;
+            width: 100%;
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .chat-input-actions {
+            position: absolute;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input-action {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .chat-input-action:hover {
+            color: var(--primary-color);
         }
 
         .chat-input button {
             padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
+            border-radius: 1.5rem;
             border: none;
             background-color: var(--primary-color);
             color: white;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .chat-input button:hover {
-            background-color: var(--primary-light);
+            background-color: var(--primary-color);
+            opacity: 0.9;
+        }
+
+        .chat-input button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+        }
+
+        .btn-icon:hover {
             color: var(--primary-color);
+            background-color: var(--primary-light);
+        }
+
+        .date-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+            color: var(--text-light);
+            font-size: 0.75rem;
+        }
+
+        .date-divider::before,
+        .date-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 0 0.5rem;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .typing-dots {
+            display: flex;
+            margin-left: 0.5rem;
+        }
+
+        .typing-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: var(--text-light);
+            margin-right: 0.25rem;
+            animation: typing-dot 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+            margin-right: 0;
+        }
+
+        @keyframes typing-dot {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+            }
+
+            30% {
+                transform: translateY(-0.25rem);
+            }
+        }
+
+        /* Message types */
+        .message-image {
+            padding: 0.5rem;
+        }
+
+        .message-image img {
+            max-width: 100%;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+
+        .message-image .message-caption {
+            padding: 0.5rem;
+        }
+
+        .message-document {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+        }
+
+        .document-icon {
+            font-size: 2rem;
+            margin-right: 0.75rem;
+        }
+
+        .document-info {
+            flex: 1;
+        }
+
+        .document-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .document-size {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        /* Empty states */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-text {
+            font-size: 0.875rem;
+            max-width: 300px;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .empty-state-button:hover {
+            opacity: 0.9;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal {
+            background-color: var(--bg-card);
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--primary-color);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-help {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-dark);
         }
 
         /* Responsive */
         @media (max-width: 992px) {
             .whatsapp-grid {
                 grid-template-columns: 1fr;
+                height: calc(100vh - 150px);
             }
+
+            .conversation-list-container {
+                display: block;
+            }
+
+            .chat-container {
+                display: none;
+            }
+
+            .show-chat .conversation-list-container {
+                display: none;
+            }
+
+            .show-chat .chat-container {
+                display: flex;
+            }
+
+            .back-button {
+                display: block !important;
+            }
+        }
+
+        .back-button {
+            display: none;
+            margin-right: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.5rem;
+            cursor: pointer;
         }
     </style>
     {% endblock %}
@@ -255,51 +750,74 @@
             <h1 class="page-title">WhatsApp Integration</h1>
 
             <div class="whatsapp-grid">
-                <div class="whatsapp-card">
+                <!-- Conversation List -->
+                <div class="whatsapp-card conversation-list-container">
                     <div class="card-header">
                         <span>Conversations</span>
-                        <button class="btn-icon"><i class="uil uil-plus"></i></button>
+                        <button class="btn-icon" id="new-conversation-btn" title="New Conversation"><i
+                                class="uil uil-plus"></i></button>
+                    </div>
+                    <div class="search-container">
+                        <input type="text" class="search-input" placeholder="Search or start new chat"
+                            id="search-conversations">
                     </div>
                     <div class="card-body">
-                        <ul class="conversation-list">
+                        <ul class="conversation-list" id="conversation-list">
                             {% for conversation in conversations %}
-                            <li class="conversation-item {% if loop.index == 1 %}active{% endif %}">
+                            <li class="conversation-item {% if loop.index == 1 %}active{% endif %}"
+                                data-phone="{{ conversation.phone }}" data-name="{{ conversation.name }}">
                                 <div class="conversation-avatar">
                                     {% if conversation.image %}
                                     <img src="{{ conversation.image }}" alt="{{ conversation.name }}">
                                     {% else %}
                                     {{ conversation.name[0] }}
                                     {% endif %}
+                                    <div class="online-indicator"></div>
                                 </div>
                                 <div class="conversation-info">
                                     <div class="conversation-name">{{ conversation.name }}</div>
                                     <div class="conversation-preview">{{ conversation.last_message }}</div>
                                 </div>
-                                <div class="conversation-time">{{ conversation.time }}</div>
-                            </li>
-                            {% endfor %}
-
-                            {% if not conversations %}
-                            <li class="conversation-item">
-                                <div class="conversation-info text-center">
-                                    <div class="conversation-name">No conversations yet</div>
-                                    <div class="conversation-preview">Start a new conversation</div>
+                                <div class="conversation-meta">
+                                    <div class="conversation-time">{{ conversation.time }}</div>
+                                    {% if conversation.unread_count %}
+                                    <div class="unread-badge">{{ conversation.unread_count }}</div>
+                                    {% endif %}
                                 </div>
                             </li>
-                            {% endif %}
+                            {% endfor %}
                         </ul>
+
+                        {% if not conversations %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="uil uil-comment-alt-dots"></i>
+                            </div>
+                            <div class="empty-state-title">No conversations yet</div>
+                            <div class="empty-state-text">Start a new conversation to connect with your contacts via
+                                WhatsApp</div>
+                            <button class="empty-state-button" id="empty-new-conversation-btn">
+                                <i class="uil uil-plus"></i> New Conversation
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
+                <!-- Chat Container -->
                 <div class="whatsapp-card">
                     <div class="chat-container">
                         <div class="chat-header">
+                            <button class="back-button" id="back-button">
+                                <i class="uil uil-arrow-left"></i>
+                            </button>
                             <div class="chat-avatar">
                                 {% if active_conversation.image %}
                                 <img src="{{ active_conversation.image }}" alt="{{ active_conversation.name }}">
                                 {% else %}
                                 {{ active_conversation.name[0] if active_conversation else "?" }}
                                 {% endif %}
+                                <div class="online-indicator"></div>
                             </div>
                             <div class="chat-info">
                                 <div class="chat-name">{{ active_conversation.name if active_conversation else "Select a
@@ -307,8 +825,35 @@
                                 <div class="chat-status">{{ active_conversation.status if active_conversation else "No
                                     active conversation" }}</div>
                             </div>
+                            <div class="chat-actions">
+                                <button class="chat-action-btn" title="Refresh Messages" id="refresh-messages-btn">
+                                    <i class="uil uil-sync"></i>
+                                </button>
+                                <button class="chat-action-btn" title="More Options">
+                                    <i class="uil uil-ellipsis-v"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="chat-messages">
+                        <div class="chat-messages" id="chat-messages">
+                            {% if not active_conversation %}
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="uil uil-comment-alt"></i>
+                                </div>
+                                <div class="empty-state-title">No conversation selected</div>
+                                <div class="empty-state-text">Select a conversation from the list or start a new one
+                                </div>
+                            </div>
+                            {% elif not messages %}
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="uil uil-comment-alt-message"></i>
+                                </div>
+                                <div class="empty-state-title">No messages yet</div>
+                                <div class="empty-state-text">Start the conversation by sending a message</div>
+                            </div>
+                            {% else %}
+                            <div class="date-divider">Today</div>
                             {% for message in messages %}
                             <div class="message {% if message.direction == 'Incoming' %}message-incoming{% else %}message-outgoing{% endif %}"
                                 data-message-id="{{ message.message_id }}">
@@ -325,31 +870,56 @@
                                     <i class="uil uil-check-double status-icon status-read"></i>
                                     {% elif message.status == 'Failed' %}
                                     <i class="uil uil-times status-icon status-failed"></i>
+                                    {% else %}
+                                    <i class="uil uil-spinner-alt status-icon"></i>
                                     {% endif %}
                                 </div>
                                 {% endif %}
                             </div>
                             {% endfor %}
-
-                            {% if not messages and active_conversation %}
-                            <div class="message message-incoming">
-                                No messages yet. Start the conversation!
-                                <div class="message-time">Now</div>
-                            </div>
-                            {% endif %}
-
-                            {% if not active_conversation %}
-                            <div class="message message-incoming">
-                                Select a conversation to view messages
-                                <div class="message-time">Now</div>
-                            </div>
                             {% endif %}
                         </div>
                         <div class="chat-input">
-                            <input type="text" placeholder="Type a message..." {% if not active_conversation
-                                %}disabled{% endif %}>
-                            <button {% if not active_conversation %}disabled{% endif %}>Send</button>
+                            <div class="chat-input-container">
+                                <input type="text" id="message-input" placeholder="Type a message..." {% if not
+                                    active_conversation %}disabled{% endif %}>
+                                <div class="chat-input-actions">
+                                    <button class="chat-input-action" title="Attach File">
+                                        <i class="uil uil-paperclip"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button id="send-message-btn" {% if not active_conversation %}disabled{% endif %}>
+                                <i class="uil uil-message"></i>
+                            </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Conversation Modal -->
+            <div class="modal-backdrop" id="new-conversation-modal" style="display: none;">
+                <div class="modal">
+                    <div class="modal-header">
+                        <div class="modal-title">New Conversation</div>
+                        <button class="modal-close" id="close-modal-btn">
+                            <i class="uil uil-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label" for="phone-number-input">Phone Number</label>
+                            <input type="text" class="form-input" id="phone-number-input" placeholder="+1234567890">
+                            <div class="form-help">Enter phone number with country code</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="contact-name-input">Contact Name</label>
+                            <input type="text" class="form-input" id="contact-name-input" placeholder="John Doe">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" id="cancel-modal-btn">Cancel</button>
+                        <button class="btn btn-primary" id="create-conversation-btn">Create</button>
                     </div>
                 </div>
             </div>
@@ -359,472 +929,8 @@
     {% include "www/on-desk/includes/scripts.html" %}
 
     {% block page_js %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            let activeConversation = null;
-            let messageStatusInterval = null;
-
-            // Function to load conversation messages
-            function loadConversation(phoneNumber, contactName) {
-                // Clear any existing status update interval
-                if (messageStatusInterval) {
-                    clearInterval(messageStatusInterval);
-                }
-
-                // Set active conversation
-                activeConversation = {
-                    phone: phoneNumber,
-                    name: contactName
-                };
-
-                // Update UI
-                document.querySelector('.chat-name').textContent = contactName;
-                document.querySelector('.chat-status').textContent = 'Loading...';
-
-                // Enable the input
-                document.querySelector('.chat-input input').disabled = false;
-                document.querySelector('.chat-input button').disabled = false;
-
-                // Fetch messages
-                frappe.call({
-                    method: 'on_desk.www.on-desk.whatsapp.api.get_conversation_messages',
-                    args: {
-                        phone_number: phoneNumber
-                    },
-                    callback: function (response) {
-                        if (response.message) {
-                            renderMessages(response.message);
-                            document.querySelector('.chat-status').textContent = 'Online';
-
-                            // Start polling for message status updates
-                            startMessageStatusUpdates();
-                        }
-                    }
-                });
-            }
-
-            // Function to render messages
-            function renderMessages(messages) {
-                const messagesContainer = document.querySelector('.chat-messages');
-                messagesContainer.innerHTML = '';
-
-                if (messages.length === 0) {
-                    const emptyMessage = document.createElement('div');
-                    emptyMessage.classList.add('message', 'message-incoming');
-                    emptyMessage.innerHTML = `
-                        No messages yet. Start the conversation!
-                        <div class="message-time">Now</div>
-                    `;
-                    messagesContainer.appendChild(emptyMessage);
-                    return;
-                }
-
-                messages.forEach(message => {
-                    const messageElement = document.createElement('div');
-                    messageElement.classList.add('message');
-                    messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
-                    messageElement.dataset.messageId = message.message_id;
-
-                    let messageContent = `
-                        ${message.message}
-                        <div class="message-time">${message.time}</div>
-                    `;
-
-                    if (message.direction === 'Outgoing') {
-                        let statusIcon = '';
-                        let statusClass = '';
-
-                        if (message.status === 'Sent') {
-                            statusIcon = 'uil-check';
-                            statusClass = 'status-sent';
-                        } else if (message.status === 'Delivered') {
-                            statusIcon = 'uil-check-double';
-                            statusClass = 'status-delivered';
-                        } else if (message.status === 'Read') {
-                            statusIcon = 'uil-check-double';
-                            statusClass = 'status-read';
-                        } else if (message.status === 'Failed') {
-                            statusIcon = 'uil-times';
-                            statusClass = 'status-failed';
-                        }
-
-                        messageContent += `
-                            <div class="message-status">
-                                <span>${message.status}</span>
-                                <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
-                            </div>
-                        `;
-                    }
-
-                    messageElement.innerHTML = messageContent;
-                    messagesContainer.appendChild(messageElement);
-                });
-
-                // Scroll to bottom
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-
-            // Function to send a message
-            function sendMessage(message) {
-                if (!activeConversation || !message) return;
-
-                // Disable the send button
-                const sendButton = document.querySelector('.chat-input button');
-                sendButton.disabled = true;
-                sendButton.textContent = 'Sending...';
-
-                // Add temporary message to UI
-                const messagesContainer = document.querySelector('.chat-messages');
-                const tempId = 'temp-' + Date.now();
-                const messageElement = document.createElement('div');
-                messageElement.classList.add('message', 'message-outgoing');
-                messageElement.dataset.messageId = tempId;
-                messageElement.innerHTML = `
-                    ${message}
-                    <div class="message-time">Just now</div>
-                    <div class="message-status">
-                        <span>Sending...</span>
-                        <i class="uil uil-spinner-alt status-icon"></i>
-                    </div>
-                `;
-                messagesContainer.appendChild(messageElement);
-
-                // Scroll to bottom
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-                // Send the message via API
-                frappe.call({
-                    method: 'on_desk.www.on-desk.whatsapp.api.send_message',
-                    args: {
-                        phone_number: activeConversation.phone,
-                        message: message
-                    },
-                    callback: function (response) {
-                        // Re-enable the send button
-                        sendButton.disabled = false;
-                        sendButton.textContent = 'Send';
-
-                        if (response.message && response.message.success) {
-                            // Update the temporary message with the real message ID
-                            const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
-                            if (tempMessage) {
-                                tempMessage.dataset.messageId = response.message.message_id;
-                                tempMessage.querySelector('.message-status').innerHTML = `
-                                    <span>Sent</span>
-                                    <i class="uil uil-check status-icon status-sent"></i>
-                                `;
-                            }
-
-                            // Start polling for status updates
-                            startMessageStatusUpdates();
-                        } else {
-                            // Show error
-                            const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
-                            if (tempMessage) {
-                                tempMessage.querySelector('.message-status').innerHTML = `
-                                    <span>Failed</span>
-                                    <i class="uil uil-times status-icon status-failed"></i>
-                                `;
-                            }
-
-                            frappe.msgprint({
-                                title: __('Error'),
-                                indicator: 'red',
-                                message: __('Failed to send message. Please try again.')
-                            });
-                        }
-                    }
-                });
-            }
-
-            // Function to start polling for message status updates
-            function startMessageStatusUpdates() {
-                // Clear any existing interval
-                if (messageStatusInterval) {
-                    clearInterval(messageStatusInterval);
-                }
-
-                // Set up new interval
-                messageStatusInterval = setInterval(() => {
-                    if (!activeConversation) return;
-
-                    // Get all outgoing messages that aren't in a final state
-                    const outgoingMessages = document.querySelectorAll('.message-outgoing');
-                    const messageIds = [];
-
-                    outgoingMessages.forEach(msg => {
-                        const messageId = msg.dataset.messageId;
-                        if (messageId && !messageId.startsWith('temp-')) {
-                            const statusEl = msg.querySelector('.message-status span');
-                            if (statusEl && statusEl.textContent !== 'Read' && statusEl.textContent !== 'Failed') {
-                                messageIds.push(messageId);
-                            }
-                        }
-                    });
-
-                    if (messageIds.length === 0) {
-                        // No messages to update, clear the interval
-                        clearInterval(messageStatusInterval);
-                        messageStatusInterval = null;
-                        return;
-                    }
-
-                    // Fetch status updates
-                    frappe.call({
-                        method: 'on_desk.www.on-desk.whatsapp.api.get_message_statuses',
-                        args: {
-                            message_ids: messageIds
-                        },
-                        callback: function (response) {
-                            if (response.message) {
-                                // Update message statuses in the UI
-                                response.message.forEach(msg => {
-                                    const messageEl = document.querySelector(`[data-message-id="${msg.message_id}"]`);
-                                    if (messageEl) {
-                                        const statusEl = messageEl.querySelector('.message-status');
-                                        if (statusEl) {
-                                            let statusIcon = '';
-                                            let statusClass = '';
-
-                                            if (msg.status === 'Sent') {
-                                                statusIcon = 'uil-check';
-                                                statusClass = 'status-sent';
-                                            } else if (msg.status === 'Delivered') {
-                                                statusIcon = 'uil-check-double';
-                                                statusClass = 'status-delivered';
-                                            } else if (msg.status === 'Read') {
-                                                statusIcon = 'uil-check-double';
-                                                statusClass = 'status-read';
-                                            } else if (msg.status === 'Failed') {
-                                                statusIcon = 'uil-times';
-                                                statusClass = 'status-failed';
-                                            }
-
-                                            statusEl.innerHTML = `
-                                                <span>${msg.status}</span>
-                                                <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
-                                            `;
-                                        }
-                                    }
-                                });
-
-                                // If all messages are in a final state, clear the interval
-                                const allFinal = response.message.every(msg =>
-                                    msg.status === 'Read' || msg.status === 'Failed');
-
-                                if (allFinal) {
-                                    clearInterval(messageStatusInterval);
-                                    messageStatusInterval = null;
-                                }
-                            }
-                        }
-                    });
-                }, 5000); // Check every 5 seconds
-            }
-
-            // Function to refresh conversations list
-            function refreshConversations() {
-                frappe.call({
-                    method: 'on_desk.www.on-desk.whatsapp.api.get_conversations',
-                    callback: function (response) {
-                        if (response.message) {
-                            renderConversations(response.message);
-                        }
-                    }
-                });
-            }
-
-            // Function to render conversations
-            function renderConversations(conversations) {
-                const conversationsList = document.querySelector('.conversation-list');
-                conversationsList.innerHTML = '';
-
-                if (conversations.length === 0) {
-                    const emptyItem = document.createElement('li');
-                    emptyItem.classList.add('conversation-item');
-                    emptyItem.innerHTML = `
-                        <div class="conversation-info text-center">
-                            <div class="conversation-name">No conversations yet</div>
-                            <div class="conversation-preview">Start a new conversation</div>
-                        </div>
-                    `;
-                    conversationsList.appendChild(emptyItem);
-                    return;
-                }
-
-                conversations.forEach((conversation, index) => {
-                    const item = document.createElement('li');
-                    item.classList.add('conversation-item');
-                    if (index === 0) item.classList.add('active');
-
-                    let avatarContent = '';
-                    if (conversation.image) {
-                        avatarContent = `<img src="${conversation.image}" alt="${conversation.name}">`;
-                    } else {
-                        avatarContent = conversation.name[0];
-                    }
-
-                    item.innerHTML = `
-                        <div class="conversation-avatar">
-                            ${avatarContent}
-                        </div>
-                        <div class="conversation-info">
-                            <div class="conversation-name">${conversation.name}</div>
-                            <div class="conversation-preview">${conversation.last_message}</div>
-                        </div>
-                        <div class="conversation-time">${conversation.time}</div>
-                    `;
-
-                    item.dataset.phone = conversation.phone;
-                    item.dataset.name = conversation.name;
-
-                    conversationsList.appendChild(item);
-
-                    // If this is the first conversation and no active conversation is set,
-                    // load it automatically
-                    if (index === 0 && !activeConversation) {
-                        loadConversation(conversation.phone, conversation.name);
-                    }
-                });
-
-                // Add click handlers to the new conversation items
-                setupConversationClickHandlers();
-            }
-
-            // Function to set up conversation click handlers
-            function setupConversationClickHandlers() {
-                const conversationItems = document.querySelectorAll('.conversation-item');
-                conversationItems.forEach(item => {
-                    item.addEventListener('click', function () {
-                        conversationItems.forEach(i => i.classList.remove('active'));
-                        this.classList.add('active');
-
-                        const phone = this.dataset.phone;
-                        const name = this.dataset.name;
-
-                        if (phone && name) {
-                            loadConversation(phone, name);
-                        }
-                    });
-                });
-            }
-
-            // Set up initial conversation click handlers
-            setupConversationClickHandlers();
-
-            // Set up send message handler
-            const sendButton = document.querySelector('.chat-input button');
-            const messageInput = document.querySelector('.chat-input input');
-
-            sendButton.addEventListener('click', function () {
-                const message = messageInput.value.trim();
-                if (message) {
-                    sendMessage(message);
-                    messageInput.value = '';
-                }
-            });
-
-            // Allow sending with Enter key
-            messageInput.addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    sendButton.click();
-                }
-            });
-
-            // Set up new conversation button
-            const newConversationButton = document.querySelector('.card-header .btn-icon');
-            newConversationButton.addEventListener('click', function () {
-                frappe.prompt([
-                    {
-                        fieldname: 'phone_number',
-                        label: 'Phone Number',
-                        fieldtype: 'Data',
-                        reqd: 1,
-                        description: 'Enter phone number with country code (e.g., +1234567890)'
-                    },
-                    {
-                        fieldname: 'contact_name',
-                        label: 'Contact Name',
-                        fieldtype: 'Data',
-                        reqd: 1
-                    }
-                ],
-                    function (values) {
-                        // Create a new conversation
-                        frappe.call({
-                            method: 'on_desk.www.on-desk.whatsapp.api.create_conversation',
-                            args: {
-                                phone_number: values.phone_number,
-                                contact_name: values.contact_name
-                            },
-                            callback: function (response) {
-                                if (response.message && response.message.success) {
-                                    // Refresh conversations list
-                                    refreshConversations();
-
-                                    // Load the new conversation
-                                    loadConversation(values.phone_number, values.contact_name);
-                                } else {
-                                    frappe.msgprint({
-                                        title: __('Error'),
-                                        indicator: 'red',
-                                        message: __('Failed to create conversation. Please try again.')
-                                    });
-                                }
-                            }
-                        });
-                    },
-                    'New Conversation',
-                    'Create'
-                );
-            });
-
-            // Set up real-time updates using Frappe's realtime events
-            frappe.realtime.on('whatsapp_message_received', function (data) {
-                // If this message is for the active conversation, refresh the messages
-                if (activeConversation && data.from_number === activeConversation.phone) {
-                    loadConversation(activeConversation.phone, activeConversation.name);
-                }
-
-                // Refresh the conversations list
-                refreshConversations();
-            });
-
-            frappe.realtime.on('whatsapp_message_status_update', function (data) {
-                // If this message is in the current view, update its status
-                const messageEl = document.querySelector(`[data-message-id="${data.message_id}"]`);
-                if (messageEl) {
-                    const statusEl = messageEl.querySelector('.message-status');
-                    if (statusEl) {
-                        let statusIcon = '';
-                        let statusClass = '';
-
-                        if (data.status === 'Sent') {
-                            statusIcon = 'uil-check';
-                            statusClass = 'status-sent';
-                        } else if (data.status === 'Delivered') {
-                            statusIcon = 'uil-check-double';
-                            statusClass = 'status-delivered';
-                        } else if (data.status === 'Read') {
-                            statusIcon = 'uil-check-double';
-                            statusClass = 'status-read';
-                        } else if (data.status === 'Failed') {
-                            statusIcon = 'uil-times';
-                            statusClass = 'status-failed';
-                        }
-
-                        statusEl.innerHTML = `
-                            <span>${data.status}</span>
-                            <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
-                        `;
-                    }
-                }
-            });
-
-            // Initial load of conversations
-            refreshConversations();
-        });
-    </script>
+    <!-- Include the WhatsApp JavaScript file -->
+    <script src="/assets/on_desk/js/whatsapp.js"></script>
     {% endblock %}
 </body>
 
