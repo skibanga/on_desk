@@ -3,6 +3,29 @@ from frappe import _
 from frappe.utils import get_gravatar, pretty_date
 
 
+def get_contact_display_name(contact):
+    """Get the display name of a contact, handling different Contact object structures"""
+    # Try the get_display_name method first
+    if hasattr(contact, "get_display_name") and callable(
+        getattr(contact, "get_display_name")
+    ):
+        return contact.get_display_name()
+
+    # If that doesn't work, try to construct a name from the available fields
+    if hasattr(contact, "first_name"):
+        name_parts = [contact.first_name]
+        if hasattr(contact, "last_name") and contact.last_name:
+            name_parts.append(contact.last_name)
+        return " ".join(name_parts)
+
+    # If we have a full_name field, use that
+    if hasattr(contact, "full_name") and contact.full_name:
+        return contact.full_name
+
+    # Fall back to the name field
+    return contact.name
+
+
 def get_context(context):
     context.no_cache = 1
 
@@ -99,7 +122,7 @@ def get_whatsapp_conversations():
 
         if latest_message[0].reference_contact:
             contact = frappe.get_doc("Contact", latest_message[0].reference_contact)
-            contact_name = contact.get_display_name()
+            contact_name = get_contact_display_name(contact)
         else:
             # Try to find a contact with this phone number
             contact_links = frappe.get_all(
@@ -108,7 +131,7 @@ def get_whatsapp_conversations():
 
             if contact_links:
                 contact = frappe.get_doc("Contact", contact_links[0].parent)
-                contact_name = contact.get_display_name()
+                contact_name = get_contact_display_name(contact)
 
         # Format the conversation
         conversations.append(
