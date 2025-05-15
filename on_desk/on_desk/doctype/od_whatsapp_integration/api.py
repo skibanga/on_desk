@@ -5,6 +5,7 @@ import frappe
 import json
 import hmac
 import hashlib
+import datetime
 from frappe import _
 from frappe.utils import get_datetime, now
 from on_desk.utils.whatsapp import get_whatsapp_integration
@@ -35,7 +36,6 @@ def handle_incoming_message():
             title="WhatsApp Webhook Debug",
         )
 
-        # Verify the request signature if using Meta
         if settings.provider == "Meta":
             verify_meta_signature(settings)
 
@@ -241,7 +241,7 @@ def create_social_media_message(
     message_doc.message_id = message_id
     message_doc.from_number = from_number
     message_doc.message = text
-    message_doc.timestamp = get_datetime.fromtimestamp(int(timestamp))
+    message_doc.timestamp = datetime.datetime.fromtimestamp(int(timestamp))
     message_doc.status = "Received"
     message_doc.raw_response = json.dumps(value)
 
