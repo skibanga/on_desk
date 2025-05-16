@@ -826,6 +826,9 @@
                                     active conversation" }}</div>
                             </div>
                             <div class="chat-actions">
+                                <button class="chat-action-btn" title="Test API Connection" id="test-api-btn">
+                                    <i class="uil uil-bolt"></i>
+                                </button>
                                 <button class="chat-action-btn" title="Refresh Messages" id="refresh-messages-btn">
                                     <i class="uil uil-sync"></i>
                                 </button>
@@ -1290,7 +1293,7 @@
                         }
 
                         // Log the method path for debugging
-                        console.log('API method path:', 'on_desk.on_desk.www.on-desk.whatsapp.api.send_message');
+                        console.log('API method path:', 'on_desk.www.on_desk.whatsapp.api.send_message');
 
                         // Check if the API endpoint is correctly configured
                         console.log('Checking API endpoint...');
@@ -1329,7 +1332,7 @@
                                 console.log('Trying direct AJAX call...');
                                 $.ajax({
                                     type: 'POST',
-                                    url: '/api/method/on_desk.on_desk.www.on-desk.whatsapp.api.send_message',
+                                    url: '/api/method/on_desk.www.on_desk.whatsapp.api.send_message',
                                     data: {
                                         phone_number: activeConversation.phone,
                                         message: message
@@ -1496,6 +1499,26 @@
                             if (activeConversation) {
                                 loadConversation(activeConversation.phone, activeConversation.name);
                             }
+                        });
+                    }
+
+                    // Set up test API button
+                    const testApiButton = document.querySelector('#test-api-btn');
+                    if (testApiButton) {
+                        testApiButton.addEventListener('click', function () {
+                            console.log('Testing API connection...');
+                            $.ajax({
+                                type: 'GET',
+                                url: '/api/method/on_desk.www.on_desk.whatsapp.api.test_api',
+                                success: function (data) {
+                                    console.log('Test API response:', data);
+                                    alert('API connection successful! Check the console for details.');
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error('Test API error:', xhr, status, error);
+                                    alert('API connection failed. Check the console for details.');
+                                }
+                            });
                         });
                     }
 

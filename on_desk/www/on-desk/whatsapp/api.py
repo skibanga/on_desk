@@ -284,6 +284,13 @@ def get_message_statuses(message_ids):
 
 
 @frappe.whitelist()
+def test_api():
+    """Simple test function to check if the API is reachable"""
+    frappe.log_error("test_api function was called successfully", "WhatsApp Debug")
+    return {"success": True, "message": "API is reachable"}
+
+
+@frappe.whitelist()
 def create_conversation(phone_number, contact_name):
     """Create a new WhatsApp conversation"""
     if not phone_number or not contact_name:
