@@ -938,14 +938,18 @@
             document.addEventListener('frappe_loaded', function () {
                 console.log('Frappe loaded event received, initializing WhatsApp functionality');
 
-                // Use frappe.require to load any additional dependencies
-                if (typeof frappe.require === 'function') {
-                    console.log('Using frappe.require to load additional dependencies');
+                // Check if we have the real frappe.require function
+                var isRealFrappeRequire = typeof frappe !== 'undefined' &&
+                    typeof frappe.require === 'function' &&
+                    (frappe._assets_loaded || frappe.assets);
+
+                if (isRealFrappeRequire) {
+                    console.log('Using real frappe.require to load additional dependencies');
                     try {
                         frappe.require([
                             "/assets/frappe/js/frappe/request.js"
                         ], function () {
-                            console.log('Additional dependencies loaded successfully');
+                            console.log('Additional dependencies loaded successfully via frappe.require');
                             initializeWhatsApp();
                         });
                     } catch (e) {
@@ -957,7 +961,7 @@
                         });
                     }
                 } else {
-                    console.log('frappe.require not available, loading dependencies directly');
+                    console.log('Real frappe.require not available, loading dependencies directly');
                     loadScriptDirectly('/assets/frappe/js/frappe/request.js', function () {
                         console.log('Additional dependencies loaded via direct method');
                         initializeWhatsApp();
@@ -978,16 +982,33 @@
                 }
             }, { once: true });
 
+            // Function to check if frappe is fully initialized with real methods
+            function isRealFrappeInitialized() {
+                // Check if frappe exists and has the methods we need
+                if (typeof frappe === 'undefined') return false;
+
+                // Check if frappe.call exists and is a real function (not our temporary one)
+                if (typeof frappe.call !== 'function') return false;
+
+                // Check if frappe.require exists and is a real function (not our temporary one)
+                if (typeof frappe.require !== 'function') return false;
+
+                // Additional check: if we have our temporary frappe object, it won't have these properties
+                if (!frappe._assets_loaded && !frappe.assets) return false;
+
+                return true;
+            }
+
             // Check if frappe is already fully loaded with all required methods
-            if (typeof frappe !== 'undefined' && typeof frappe.call === 'function' && typeof frappe.require === 'function') {
-                console.log('Frappe already fully loaded, dispatching event');
+            if (isRealFrappeInitialized()) {
+                console.log('Frappe already fully loaded with real methods, dispatching event');
                 document.dispatchEvent(new Event('frappe_loaded'));
             } else if (typeof frappe !== 'undefined') {
                 console.log('Frappe object exists but may not be fully initialized, waiting for complete load');
                 // Wait a short time to allow frappe to fully initialize
                 setTimeout(function () {
-                    if (typeof frappe.require === 'function') {
-                        console.log('Frappe now fully initialized, dispatching event');
+                    if (isRealFrappeInitialized()) {
+                        console.log('Frappe now fully initialized with real methods, dispatching event');
                         document.dispatchEvent(new Event('frappe_loaded'));
                     } else {
                         console.log('Frappe still not fully initialized, proceeding with fallbacks');

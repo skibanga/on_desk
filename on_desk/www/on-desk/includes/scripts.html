@@ -7,9 +7,19 @@
     document.addEventListener('DOMContentLoaded', function () {
         // Function to check if frappe is fully initialized
         function isFrappeFullyInitialized() {
-            return typeof frappe !== 'undefined' &&
-                typeof frappe.call === 'function' &&
-                typeof frappe.require === 'function';
+            // Check if frappe exists and has the methods we need
+            if (typeof frappe === 'undefined') return false;
+
+            // Check if frappe.call exists and is a real function (not our temporary one)
+            if (typeof frappe.call !== 'function') return false;
+
+            // Check if frappe.require exists and is a real function (not our temporary one)
+            if (typeof frappe.require !== 'function') return false;
+
+            // Additional check: if we have our temporary frappe object, it won't have these properties
+            if (!frappe._assets_loaded && !frappe.assets) return false;
+
+            return true;
         }
 
         // Function to dispatch the frappe_loaded event
@@ -83,35 +93,40 @@
     if (typeof frappe === 'undefined') {
         console.warn('Creating temporary frappe object');
         window.frappe = {
+            // Add a flag to identify this as our temporary object
+            _isTemporaryFrappe: true,
+
             call: function (opts) {
-                console.log('Frappe is loading. Queuing API call:', opts);
+                console.log('TEMP FRAPPE: Queuing API call:', opts);
                 // Queue the call to be executed when frappe is loaded
                 document.addEventListener('frappe_loaded', function () {
-                    if (typeof frappe.call === 'function') {
-                        console.log('Executing queued API call');
+                    if (typeof frappe.call === 'function' && !frappe._isTemporaryFrappe) {
+                        console.log('TEMP FRAPPE: Executing queued API call with real frappe');
                         frappe.call(opts);
                     } else {
-                        console.error('Frappe loaded but call method not available');
+                        console.error('TEMP FRAPPE: Real frappe not available for queued call');
                         if (opts.error) {
-                            opts.error(new Error('Frappe call method not available'));
+                            opts.error(new Error('Real frappe call method not available'));
                         }
                     }
                 }, { once: true });
             },
+
             msgprint: function (opts) {
-                console.log('Frappe is loading. Queuing message:', opts);
+                console.log('TEMP FRAPPE: Queuing message:', opts);
                 // Show a basic alert for now
                 alert(opts.message || 'An error occurred');
             },
+
             require: function (assets, callback) {
-                console.log('Frappe is loading. Queuing require for:', assets);
+                console.log('TEMP FRAPPE: Queuing require for:', assets);
                 // Queue the require to be executed when frappe is loaded
                 document.addEventListener('frappe_loaded', function () {
-                    if (typeof frappe.require === 'function') {
-                        console.log('Executing queued require');
+                    if (typeof frappe.require === 'function' && !frappe._isTemporaryFrappe) {
+                        console.log('TEMP FRAPPE: Executing queued require with real frappe');
                         frappe.require(assets, callback);
                     } else {
-                        console.error('Frappe loaded but require method not available');
+                        console.log('TEMP FRAPPE: Real frappe.require not available, loading scripts directly');
                         // Try to load scripts manually
                         if (typeof assets === 'string') {
                             assets = [assets];
