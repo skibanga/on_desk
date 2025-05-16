@@ -1,0 +1,59 @@
+{% extends "templates/base.html" %}
+
+{%- block title -%}
+    {% if title %}{{ title }}{% else %}{{ _("On Desk") }}{% endif %}
+{%- endblock -%}
+
+{% block head_include %}
+    {{ super() }}
+    <link rel="stylesheet" href="/assets/on_desk/css/on-desk.css">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+{% endblock %}
+
+{% block navbar %}
+    {% include "on_desk/www/on-desk/includes/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+    <div class="on-desk-container">
+        {% block on_desk_content %}{% endblock %}
+    </div>
+{% endblock %}
+
+{% block footer %}
+    {% include "on_desk/www/on-desk/includes/footer.html" %}
+{% endblock %}
+
+{% block script %}
+    {{ super() }}
+    <script>
+        // Debug real-time components
+        console.log("Checking Frappe real-time components:");
+        console.log("window.socketio_port =", window.socketio_port);
+        console.log("frappe.realtime =", frappe.realtime ? "Available" : "Not available");
+        
+        // Initialize real-time when Frappe is ready
+        frappe.ready(function() {
+            console.log("Frappe ready event triggered");
+            if (frappe.realtime) {
+                console.log("Real-time system is available");
+                
+                // Listen for WhatsApp events
+                frappe.realtime.on('whatsapp_message_received', function(data) {
+                    console.log('WhatsApp message received:', data);
+                    // Broadcast event for other components to handle
+                    $(document).trigger('whatsapp_message_received', data);
+                });
+                
+                frappe.realtime.on('whatsapp_message_status_updated', function(data) {
+                    console.log('WhatsApp message status updated:', data);
+                    // Broadcast event for other components to handle
+                    $(document).trigger('whatsapp_message_status_updated', data);
+                });
+            } else {
+                console.error("Real-time system is not available");
+            }
+        });
+    </script>
+    <script src="/assets/on_desk/js/on-desk.js"></script>
+{% endblock %}

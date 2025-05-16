@@ -1,0 +1,20 @@
+<nav class="on-desk-navbar">
+    <div class="navbar-brand">
+        <a href="/on-desk">
+            <img src="/assets/on_desk/images/logo.png" alt="On Desk Logo" class="logo">
+            <span class="brand-name">On Desk</span>
+        </a>
+    </div>
+    <div class="navbar-menu">
+        <a href="/on-desk" class="nav-item {% if path == '/on-desk' %}active{% endif %}">Dashboard</a>
+        <a href="/on-desk/tickets" class="nav-item {% if '/tickets' in path %}active{% endif %}">Tickets</a>
+        <a href="/on-desk/whatsapp" class="nav-item {% if '/whatsapp' in path %}active{% endif %}">WhatsApp</a>
+        <a href="/on-desk/settings" class="nav-item {% if '/settings' in path %}active{% endif %}">Settings</a>
+    </div>
+    <div class="navbar-user">
+        <div class="user-info">
+            <span class="user-name">{{ frappe.session.user }}</span>
+            <a href="/app" class="desk-link">Go to Desk</a>
+        </div>
+    </div>
+</nav>
