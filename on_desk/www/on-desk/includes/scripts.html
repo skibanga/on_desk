@@ -1,6 +1,101 @@
 <!-- Common Scripts -->
 <script src="/assets/frappe/js/lib/jquery/jquery.min.js"></script>
-<script src="/assets/js/frappe-web.min.js"></script>
+
+<!-- Load Frappe core libraries properly -->
+<script>
+    // Load Frappe in a proper sequence
+    document.addEventListener('DOMContentLoaded', function () {
+        // First check if frappe is already defined
+        if (typeof frappe === 'undefined') {
+            console.log('Loading Frappe core libraries...');
+
+            // Create a script element to load provide.js first
+            var provideScript = document.createElement('script');
+            provideScript.src = '/assets/frappe/js/frappe/provide.js';
+            provideScript.onload = function () {
+                console.log('Frappe provide.js loaded');
+
+                // Now load the main frappe-web bundle
+                var webScript = document.createElement('script');
+                webScript.src = '/assets/js/frappe-web.min.js';
+                webScript.onload = function () {
+                    console.log('Frappe web bundle loaded');
+
+                    // Dispatch an event to notify that frappe is loaded
+                    document.dispatchEvent(new Event('frappe_loaded'));
+                };
+                document.head.appendChild(webScript);
+            };
+            document.head.appendChild(provideScript);
+        } else {
+            console.log('Frappe is already defined');
+            // Dispatch the event anyway
+            document.dispatchEvent(new Event('frappe_loaded'));
+        }
+    });
+
+    // Define a temporary frappe object for use before the real one loads
+    if (typeof frappe === 'undefined') {
+        console.warn('Creating temporary frappe object');
+        window.frappe = {
+            call: function (opts) {
+                console.log('Frappe is loading. Queuing API call:', opts);
+                // Queue the call to be executed when frappe is loaded
+                document.addEventListener('frappe_loaded', function () {
+                    if (typeof frappe.call === 'function') {
+                        console.log('Executing queued API call');
+                        frappe.call(opts);
+                    } else {
+                        console.error('Frappe loaded but call method not available');
+                        if (opts.error) {
+                            opts.error(new Error('Frappe call method not available'));
+                        }
+                    }
+                }, { once: true });
+            },
+            msgprint: function (opts) {
+                console.log('Frappe is loading. Queuing message:', opts);
+                // Show a basic alert for now
+                alert(opts.message || 'An error occurred');
+            },
+            require: function (assets, callback) {
+                console.log('Frappe is loading. Queuing require for:', assets);
+                // Queue the require to be executed when frappe is loaded
+                document.addEventListener('frappe_loaded', function () {
+                    if (typeof frappe.require === 'function') {
+                        console.log('Executing queued require');
+                        frappe.require(assets, callback);
+                    } else {
+                        console.error('Frappe loaded but require method not available');
+                        // Try to load scripts manually
+                        if (typeof assets === 'string') {
+                            assets = [assets];
+                        }
+                        var loaded = 0;
+                        assets.forEach(function (asset) {
+                            var script = document.createElement('script');
+                            script.src = asset.startsWith('/') ? asset : '/assets/js/' + asset;
+                            script.onload = function () {
+                                loaded++;
+                                if (loaded === assets.length && callback) {
+                                    callback();
+                                }
+                            };
+                            document.head.appendChild(script);
+                        });
+                    }
+                }, { once: true });
+            }
+        };
+    }
+
+    // Define __ function if it doesn't exist
+    if (typeof __ !== 'function') {
+        window.__ = function (txt) {
+            return txt;
+        };
+    }
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
