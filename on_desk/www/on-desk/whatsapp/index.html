@@ -879,20 +879,21 @@
                             {% endfor %}
                             {% endif %}
                         </div>
-                        <div class="chat-input">
+                        <form class="chat-input" onsubmit="return false;">
                             <div class="chat-input-container">
                                 <input type="text" id="message-input" placeholder="Type a message..." {% if not
                                     active_conversation %}disabled{% endif %}>
                                 <div class="chat-input-actions">
-                                    <button class="chat-input-action" title="Attach File">
+                                    <button type="button" class="chat-input-action" title="Attach File">
                                         <i class="uil uil-paperclip"></i>
                                     </button>
                                 </div>
                             </div>
-                            <button id="send-message-btn" {% if not active_conversation %}disabled{% endif %}>
+                            <button type="submit" id="send-message-btn" {% if not active_conversation %}disabled{% endif
+                                %}>
                                 <i class="uil uil-message"></i>
                             </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -1384,11 +1385,14 @@
                     console.log('Message input:', messageInput);
 
                     if (sendButton) {
-                        console.log('Adding click event listener to send button');
+                        // Remove any existing event listeners by cloning the button
+                        const newButton = sendButton.cloneNode(true);
+                        sendButton.parentNode.replaceChild(newButton, sendButton);
+                        sendButton = newButton;
+
+                        // Add the event listener
                         sendButton.addEventListener('click', function () {
-                            console.log('Send button clicked');
                             const message = messageInput.value.trim();
-                            console.log('Message:', message);
                             if (message) {
                                 sendMessage(message);
                                 messageInput.value = '';
@@ -1396,6 +1400,18 @@
                         });
                     } else {
                         console.error('Send button not found!');
+
+                        // Try to find the button again by class
+                        const chatInputButton = document.querySelector('.chat-input button');
+                        if (chatInputButton) {
+                            chatInputButton.addEventListener('click', function () {
+                                const message = messageInput.value.trim();
+                                if (message) {
+                                    sendMessage(message);
+                                    messageInput.value = '';
+                                }
+                            });
+                        }
                     }
 
                     // Allow sending with Enter key
@@ -1441,6 +1457,9 @@
                             }
                         });
                     }
+
+                    // Make sure send button works
+                    setTimeout(ensureEventHandlers, 100);
                 }
 
                 // Function to start polling for message status updates
@@ -1650,22 +1669,16 @@
                     }
                 }
 
-                // Debug function to check elements
-                function debugElements() {
-                    console.log('Debugging elements:');
-                    console.log('Send button by ID:', document.querySelector('#send-message-btn'));
-                    console.log('Send button by class:', document.querySelector('.chat-input button'));
-                    console.log('Chat input:', document.querySelector('.chat-input'));
-                    console.log('Message input:', document.querySelector('#message-input'));
-                    console.log('Chat messages container:', document.querySelector('.chat-messages'));
-                    console.log('Chat messages container by ID:', document.querySelector('#chat-messages'));
-
-                    // Add click event directly to the button
-                    const sendBtn = document.querySelector('.chat-input button');
+                // Function to ensure UI elements have proper event handlers
+                function ensureEventHandlers() {
+                    // Add direct click event to send button if it exists
+                    const sendBtn = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
                     if (sendBtn) {
-                        console.log('Adding direct click event to send button');
-                        sendBtn.addEventListener('click', function () {
-                            console.log('Send button clicked directly');
+                        // Remove any existing event listeners by cloning the button
+                        const newSendBtn = sendBtn.cloneNode(true);
+                        sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+
+                        newSendBtn.addEventListener('click', function () {
                             const msgInput = document.querySelector('#message-input');
                             if (msgInput && msgInput.value.trim()) {
                                 sendMessage(msgInput.value.trim());
@@ -1673,10 +1686,42 @@
                             }
                         });
                     }
+
+                    // Add form submit handler
+                    const chatForm = document.querySelector('.chat-input');
+                    if (chatForm) {
+                        chatForm.addEventListener('submit', function (e) {
+                            e.preventDefault();
+                            const msgInput = document.querySelector('#message-input');
+                            if (msgInput && msgInput.value.trim()) {
+                                sendMessage(msgInput.value.trim());
+                                msgInput.value = '';
+                            }
+                            return false;
+                        });
+                    }
+
+                    // Add Enter key handler to message input
+                    const msgInput = document.querySelector('#message-input');
+                    if (msgInput) {
+                        msgInput.addEventListener('keypress', function (e) {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const message = this.value.trim();
+                                if (message) {
+                                    sendMessage(message);
+                                    this.value = '';
+                                }
+                            }
+                        });
+                    }
                 }
 
                 // Initialize the UI
                 initializeUI();
+
+                // Ensure all event handlers are properly set up
+                ensureEventHandlers();
 
                 // Initial load of conversations
                 refreshConversations();
