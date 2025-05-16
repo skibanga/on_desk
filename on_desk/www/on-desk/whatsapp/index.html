@@ -174,7 +174,7 @@
             }
         }
     </style>
-    {% endblock page_css %}
+    {% endblock %}
 </head>
 
 <body>
@@ -235,93 +235,93 @@
     {% block page_js %}
     <script>
         // Initialize WhatsApp functionality
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Mock Frappe object if not available (for testing)
             if (typeof frappe === 'undefined') {
                 console.log('Frappe object is not defined. Adding mock implementation.');
                 window.frappe = {
-                    call: function(opts) {
+                    call: function (opts) {
                         console.log('Mock frappe.call:', opts);
                         if (opts.callback) {
                             opts.callback({ message: [] });
                         }
                     },
-                    __: function(text) {
+                    __: function (text) {
                         return text;
                     }
                 };
-                
+
                 // Make __ function globally available
-                window.__ = function(text) {
+                window.__ = function (text) {
                     return text;
                 };
             }
-            
+
             let activeConversation = null;
-            
+
             // Function to load conversation
             function loadConversation(phoneNumber, name) {
                 console.log('Loading conversation:', phoneNumber, name);
-                
+
                 // Set active conversation
                 activeConversation = {
                     phone: phoneNumber,
                     name: name
                 };
-                
+
                 // Update UI
                 document.querySelector('.chat-name').textContent = name;
                 document.querySelector('.chat-status').textContent = 'Online';
-                
+
                 // Enable input
                 document.querySelector('#message-input').disabled = false;
                 document.querySelector('#send-message-btn').disabled = false;
-                
+
                 // Fetch messages
                 frappe.call({
                     method: 'on_desk.on_desk.www.on-desk.whatsapp.api.get_conversation_messages',
                     args: {
                         phone_number: phoneNumber
                     },
-                    callback: function(response) {
+                    callback: function (response) {
                         if (response.message) {
                             renderMessages(response.message);
                         }
                     }
                 });
             }
-            
+
             // Function to render messages
             function renderMessages(messages) {
                 const chatMessages = document.querySelector('#chat-messages');
                 chatMessages.innerHTML = '';
-                
-                messages.forEach(function(message) {
+
+                messages.forEach(function (message) {
                     const messageEl = document.createElement('div');
                     messageEl.className = `message message-${message.direction}`;
                     messageEl.innerHTML = `
-                        <div class="message-content">${message.content}</div>
-                        <div class="message-time">${message.time}</div>
+                        <div class="message-content">${message.message || message.content || ''}</div>
+                        <div class="message-time">${message.time || ''}</div>
                     `;
                     chatMessages.appendChild(messageEl);
                 });
-                
+
                 // Scroll to bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
-            
+
             // Function to send message
             function sendMessage(message) {
                 if (!message) {
                     console.error('Cannot send message: message is missing');
                     return;
                 }
-                
+
                 if (!activeConversation) {
                     console.error('No active conversation');
                     return;
                 }
-                
+
                 // Send the message via API
                 frappe.call({
                     method: 'on_desk.on_desk.www.on-desk.whatsapp.api.send_message',
@@ -329,7 +329,7 @@
                         phone_number: activeConversation.phone,
                         message: message
                     },
-                    callback: function(response) {
+                    callback: function (response) {
                         if (response.message && response.message.success) {
                             // Add message to UI
                             const chatMessages = document.querySelector('#chat-messages');
@@ -340,7 +340,7 @@
                                 <div class="message-time">Just now</div>
                             `;
                             chatMessages.appendChild(messageEl);
-                            
+
                             // Scroll to bottom
                             chatMessages.scrollTop = chatMessages.scrollHeight;
                         } else {
@@ -349,47 +349,77 @@
                     }
                 });
             }
-            
+
             // Event listeners
-            document.querySelector('#send-message-btn').addEventListener('click', function() {
+            document.querySelector('#new-conversation-btn').addEventListener('click', function () {
+                // Prompt for phone number and name
+                const phoneNumber = prompt('Enter phone number:');
+                if (!phoneNumber) return;
+
+                const contactName = prompt('Enter contact name:');
+                if (!contactName) return;
+
+                // Create new conversation
+                frappe.call({
+                    method: 'on_desk.on_desk.www.on-desk.whatsapp.api.create_conversation',
+                    args: {
+                        phone_number: phoneNumber,
+                        contact_name: contactName
+                    },
+                    callback: function (response) {
+                        if (response.message && response.message.success) {
+                            // Refresh conversations
+                            loadConversations();
+
+                            // Load the new conversation
+                            loadConversation(phoneNumber, contactName);
+                        } else {
+                            console.error('Failed to create conversation:', response);
+                            alert('Failed to create conversation');
+                        }
+                    }
+                });
+            });
+
+            document.querySelector('#send-message-btn').addEventListener('click', function () {
                 const messageInput = document.querySelector('#message-input');
                 const message = messageInput.value.trim();
-                
+
                 if (message) {
                     sendMessage(message);
                     messageInput.value = '';
                 }
             });
-            
-            document.querySelector('#message-input').addEventListener('keypress', function(e) {
+
+            document.querySelector('#message-input').addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') {
                     const message = this.value.trim();
-                    
+
                     if (message) {
                         sendMessage(message);
                         this.value = '';
                     }
                 }
             });
-            
+
             // Load conversations
             function loadConversations() {
                 frappe.call({
                     method: 'on_desk.on_desk.www.on-desk.whatsapp.api.get_conversations',
-                    callback: function(response) {
+                    callback: function (response) {
                         if (response.message) {
                             renderConversations(response.message);
                         }
                     }
                 });
             }
-            
+
             // Render conversations
             function renderConversations(conversations) {
                 const conversationList = document.querySelector('#conversation-list');
                 conversationList.innerHTML = '';
-                
-                conversations.forEach(function(conversation) {
+
+                conversations.forEach(function (conversation) {
                     const conversationEl = document.createElement('li');
                     conversationEl.className = 'conversation-item';
                     conversationEl.innerHTML = `
@@ -401,20 +431,20 @@
                             <div class="conversation-preview">${conversation.last_message || 'No messages yet'}</div>
                         </div>
                     `;
-                    
-                    conversationEl.addEventListener('click', function() {
-                        loadConversation(conversation.phone_number, conversation.name);
+
+                    conversationEl.addEventListener('click', function () {
+                        loadConversation(conversation.phone || conversation.phone_number, conversation.name);
                     });
-                    
+
                     conversationList.appendChild(conversationEl);
                 });
             }
-            
+
             // Initial load
             loadConversations();
         });
     </script>
-    {% endblock page_js %}
+    {% endblock %}
 </body>
 
 </html>
