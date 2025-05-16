@@ -950,6 +950,9 @@
 
     <!-- Include the WhatsApp JavaScript file -->
     <script>
+        // Make socketio_port available to JavaScript - this is used by frappe.realtime
+        window.socketio_port = {{ socketio_port or 9000 }};
+
         document.addEventListener('DOMContentLoaded', function () {
             // Listen for the frappe_loaded event
             document.addEventListener('frappe_loaded', function () {
@@ -1616,6 +1619,34 @@
 
                     // Note: Further status updates will come through real-time events
                     console.log('Real-time status updates are now active');
+
+                    // Set up a fallback polling mechanism in case real-time events don't work
+                    setupFallbackPolling();
+                }
+
+                // Function to set up fallback polling for new messages
+                function setupFallbackPolling() {
+                    console.log('Setting up fallback polling for new messages...');
+
+                    // Poll for new messages every 30 seconds
+                    const pollInterval = setInterval(function () {
+                        if (!activeConversation) {
+                            return;
+                        }
+
+                        console.log('Polling for new messages...');
+
+                        // Refresh the current conversation
+                        loadConversation(activeConversation.phone, activeConversation.name);
+
+                        // Refresh the conversations list
+                        refreshConversations();
+                    }, 30000); // 30 seconds
+
+                    // Store the interval ID for cleanup if needed
+                    window.whatsappPollInterval = pollInterval;
+
+                    console.log('Fallback polling set up successfully');
                 }
 
                 // Function to refresh conversations list
@@ -1877,8 +1908,40 @@
                 // Initial load of conversations
                 refreshConversations();
 
+                // Initialize frappe.realtime
+                initializeRealtime();
+
                 // Set up real-time event listeners
                 setupRealtimeEvents();
+
+                // Function to initialize frappe.realtime
+                function initializeRealtime() {
+                    console.log('Initializing frappe.realtime...');
+
+                    if (typeof frappe === 'undefined') {
+                        console.error('frappe is not defined. Cannot initialize realtime.');
+                        return;
+                    }
+
+                    // Check if frappe.realtime exists
+                    if (!frappe.realtime) {
+                        console.error('frappe.realtime is not defined. Make sure frappe-web.bundle.js is loaded.');
+                        return;
+                    }
+
+                    try {
+                        // Get socketio port from window or use default 9000
+                        const socketio_port = window.socketio_port || 9000;
+                        console.log('Using socketio_port:', socketio_port);
+
+                        // Initialize realtime with lazy connection
+                        // This is the standard Frappe way to initialize realtime
+                        frappe.realtime.init(socketio_port, true);
+                        console.log('frappe.realtime initialized successfully');
+                    } catch (error) {
+                        console.error('Error initializing frappe.realtime:', error);
+                    }
+                }
 
                 // Function to set up real-time event listeners
                 function setupRealtimeEvents() {
@@ -1887,6 +1950,8 @@
                     // Check if frappe.realtime is available
                     if (typeof frappe === 'undefined' || !frappe.realtime) {
                         console.error('frappe.realtime is not available. Real-time updates will not work.');
+                        console.log('Using fallback polling mechanism instead.');
+                        setupFallbackPolling();
                         return;
                     }
 

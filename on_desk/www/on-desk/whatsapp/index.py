@@ -82,6 +82,12 @@ def get_context(context):
     # Add CSRF token to context
     context.csrf_token = frappe.sessions.get_csrf_token()
 
+    # Add socketio_port to context - this is used by frappe.realtime
+    context.socketio_port = frappe.conf.get("socketio_port", 9000)
+
+    # Ensure frappe-web.bundle.js is included which contains the realtime client
+    frappe.require_asset("js/frappe-web.bundle.js")
+
     return context
 
 
