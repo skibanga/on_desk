@@ -1261,6 +1261,12 @@
 
                     // Send the message via API
                     try {
+                        console.log('Sending message to API with args:', {
+                            phone_number: activeConversation.phone,
+                            message: message
+                        });
+
+                        // Send the message directly
                         frappe.call({
                             method: 'on_desk.on_desk.www.on-desk.whatsapp.api.send_message',
                             args: {
@@ -1269,6 +1275,9 @@
                             },
                             callback: function (response) {
                                 console.log('API response:', response);
+
+                                // Debug: Log the full response structure
+                                console.log('API response structure:', JSON.stringify(response));
 
                                 // Re-enable the send button
                                 const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
@@ -1321,6 +1330,21 @@
                             error: function (err) {
                                 console.error('Error sending message:', err);
 
+                                // Debug: Log the full error structure
+                                console.error('Error details:', JSON.stringify(err));
+
+                                // Check if there's a specific error message
+                                let errorMessage = 'Failed to send message. Please try again.';
+                                if (err && err.message) {
+                                    errorMessage = err.message;
+                                } else if (err && err.statusText) {
+                                    errorMessage = err.statusText;
+                                } else if (typeof err === 'string') {
+                                    errorMessage = err;
+                                }
+
+                                console.error('Error message:', errorMessage);
+
                                 // Re-enable the send button
                                 const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
                                 if (sendButton) {
@@ -1332,7 +1356,7 @@
                                 const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
                                 if (tempMessage) {
                                     tempMessage.querySelector('.message-status').innerHTML = `
-                                        <span>Failed</span>
+                                        <span>Failed: ${errorMessage}</span>
                                         <i class="uil uil-times status-icon status-failed"></i>
                                     `;
                                 }
@@ -1352,6 +1376,20 @@
                     } catch (error) {
                         console.error('Exception in sendMessage:', error);
 
+                        // Debug: Log the full error structure
+                        console.error('Exception details:', error);
+                        console.error('Exception stack:', error.stack);
+
+                        // Check if there's a specific error message
+                        let errorMessage = 'Unknown error';
+                        if (error && error.message) {
+                            errorMessage = error.message;
+                        } else if (typeof error === 'string') {
+                            errorMessage = error;
+                        }
+
+                        console.error('Exception message:', errorMessage);
+
                         // Re-enable the send button
                         const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
                         if (sendButton) {
@@ -1363,12 +1401,12 @@
                         const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
                         if (tempMessage) {
                             tempMessage.querySelector('.message-status').innerHTML = `
-                                <span>Failed</span>
+                                <span>Failed: ${errorMessage}</span>
                                 <i class="uil uil-times status-icon status-failed"></i>
                             `;
                         }
 
-                        alert('Error sending message: ' + error.message);
+                        alert('Error sending message: ' + errorMessage);
                     }
                 }
 

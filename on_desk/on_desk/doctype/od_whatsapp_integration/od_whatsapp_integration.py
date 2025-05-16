@@ -37,13 +37,48 @@ class ODWhatsAppIntegration(Document):
         self, to_number, message, template=None, template_params=None
     ):
         """Send a WhatsApp message using Meta's WhatsApp Business API"""
+        import traceback
+
+        frappe.log_error(
+            f"send_message_meta called with: to_number={to_number}, message={message}, template={template}",
+            "WhatsApp Debug",
+        )
+
+        # Check if API key is configured
+        api_key = self.get_password("api_key")
+        if not api_key:
+            error_msg = "API key is not configured"
+            frappe.log_error(error_msg, "WhatsApp Debug")
+            frappe.throw(error_msg)
+
+        # Check if phone_number_id is configured
+        if not self.phone_number_id:
+            error_msg = "Phone Number ID is not configured"
+            frappe.log_error(error_msg, "WhatsApp Debug")
+            frappe.throw(error_msg)
+
+        # Check if API endpoint is configured
+        if not self.api_endpoint:
+            error_msg = "API endpoint is not configured"
+            frappe.log_error(error_msg, "WhatsApp Debug")
+            frappe.throw(error_msg)
+
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.get_password('api_key')}",
+            "Authorization": f"Bearer {api_key}",
         }
 
+        frappe.log_error(f"Headers prepared (without sensitive data)", "WhatsApp Debug")
+
         # Format the phone number (remove any non-numeric characters except +)
+        original_number = to_number
         to_number = "".join([c for c in to_number if c.isdigit() or c == "+"])
+
+        if original_number != to_number:
+            frappe.log_error(
+                f"Phone number formatted from {original_number} to {to_number}",
+                "WhatsApp Debug",
+            )
 
         # If template is provided, use template message
         if template and template_params:
@@ -58,6 +93,9 @@ class ODWhatsAppIntegration(Document):
                     "components": [{"type": "body", "parameters": template_params}],
                 },
             }
+            frappe.log_error(
+                f"Using template message with template: {template}", "WhatsApp Debug"
+            )
         else:
             # Use text message
             payload = {
@@ -67,28 +105,73 @@ class ODWhatsAppIntegration(Document):
                 "type": "text",
                 "text": {"body": message},
             }
+            frappe.log_error(f"Using text message", "WhatsApp Debug")
 
         url = f"{self.api_endpoint}/{self.phone_number_id}/messages"
+        frappe.log_error(f"API URL: {url}", "WhatsApp Debug")
+        frappe.log_error(f"Request payload: {json.dumps(payload)}", "WhatsApp Debug")
 
         try:
+            frappe.log_error("Sending HTTP request to WhatsApp API", "WhatsApp Debug")
             response = requests.post(url, headers=headers, data=json.dumps(payload))
-            response_data = response.json()
+
+            frappe.log_error(
+                f"API response status code: {response.status_code}", "WhatsApp Debug"
+            )
+
+            try:
+                response_data = response.json()
+                frappe.log_error(
+                    f"API response data: {json.dumps(response_data)}", "WhatsApp Debug"
+                )
+            except Exception as json_error:
+                frappe.log_error(
+                    f"Failed to parse JSON response: {str(json_error)}\nRaw response: {response.text}",
+                    "WhatsApp Debug",
+                )
+                response_data = {"error": "Failed to parse response"}
 
             if response.status_code == 200:
+                frappe.log_error("API call successful (status 200)", "WhatsApp Debug")
                 # Create a record of the sent message
-                self.create_message_record(
-                    to_number, message, "Outgoing", response_data
-                )
+                try:
+                    record_name = self.create_message_record(
+                        to_number, message, "Outgoing", response_data
+                    )
+                    frappe.log_error(
+                        f"Created message record: {record_name}", "WhatsApp Debug"
+                    )
+                except Exception as record_error:
+                    error_trace = traceback.format_exc()
+                    frappe.log_error(
+                        f"Failed to create message record: {str(record_error)}\n\nTraceback:\n{error_trace}",
+                        "WhatsApp Debug",
+                    )
+
                 return response_data
             else:
+                error_msg = f"WhatsApp API Error: Status code {response.status_code}"
                 frappe.log_error(
-                    f"WhatsApp API Error: {response_data}", "WhatsApp Message Error"
+                    f"{error_msg}\nResponse data: {json.dumps(response_data)}",
+                    "WhatsApp Message Error",
                 )
+                frappe.throw(error_msg)
                 return None
-        except Exception as e:
+        except requests.exceptions.RequestException as req_error:
+            error_trace = traceback.format_exc()
+            error_msg = f"WhatsApp API Request Exception: {str(req_error)}"
             frappe.log_error(
-                f"WhatsApp API Exception: {str(e)}", "WhatsApp Message Error"
+                f"{error_msg}\n\nTraceback:\n{error_trace}", "WhatsApp Message Error"
             )
+            frappe.throw(error_msg)
+            return None
+        except Exception as e:
+            error_trace = traceback.format_exc()
+            error_msg = f"WhatsApp API Exception: {str(e)}"
+            frappe.log_error(
+                f"{error_msg}\n\nTraceback:\n{error_trace}", "WhatsApp Message Error"
+            )
+            frappe.throw(error_msg)
             return None
 
     def send_message_twilio(self, to_number, message):
