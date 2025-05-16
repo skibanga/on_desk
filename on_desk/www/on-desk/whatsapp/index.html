@@ -998,6 +998,9 @@
                 $.ajax({
                     type: 'GET',
                     url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.od_whatsapp_integration.get_whatsapp_settings',
+                    headers: {
+                        'X-Frappe-CSRF-Token': frappe.csrf_token
+                    },
                     success: function (data) {
                         console.log('WhatsApp settings:', data);
                         if (!data.message || !data.message.enabled) {
@@ -1300,6 +1303,9 @@
                         $.ajax({
                             type: 'GET',
                             url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.od_whatsapp_integration.get_whatsapp_settings',
+                            headers: {
+                                'X-Frappe-CSRF-Token': frappe.csrf_token
+                            },
                             success: function (data) {
                                 console.log('WhatsApp settings for sending:', data);
                                 if (!data.message || !data.message.enabled) {
@@ -1333,6 +1339,9 @@
                                 $.ajax({
                                     type: 'POST',
                                     url: '/api/method/on_desk.on_desk.www.on-desk.whatsapp.api.send_message',
+                                    headers: {
+                                        'X-Frappe-CSRF-Token': frappe.csrf_token
+                                    },
                                     data: {
                                         phone_number: activeConversation.phone,
                                         message: message
@@ -1510,6 +1519,9 @@
                             $.ajax({
                                 type: 'GET',
                                 url: '/api/method/on_desk.on_desk.www.on-desk.whatsapp.api.test_api',
+                                headers: {
+                                    'X-Frappe-CSRF-Token': frappe.csrf_token
+                                },
                                 success: function (data) {
                                     console.log('Test API response:', data);
                                     alert('API connection successful! Check the console for details.');
