@@ -948,10 +948,15 @@
         var csrfToken = "{{ csrf_token }}";
     </script>
 
+    <!-- Include Frappe web JS bundle for real-time functionality -->
+    {% if include_frappe_web_js %}
+    <script src="/assets/js/frappe-web.bundle.js"></script>
+    {% endif %}
+
     <!-- Include the WhatsApp JavaScript file -->
     <script>
         // Make socketio_port available to JavaScript - this is used by frappe.realtime
-        window.socketio_port = {{ socketio_port or 9000 }};
+        window.socketio_port = {% if socketio_port %}{{socketio_port}}{% else %}9000{% endif %};
 
         document.addEventListener('DOMContentLoaded', function () {
             // Listen for the frappe_loaded event
