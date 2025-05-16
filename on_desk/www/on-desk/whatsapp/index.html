@@ -930,6 +930,18 @@
     {% include "www/on-desk/includes/scripts.html" %}
 
     {% block page_js %}
+    <!-- Set initial conversation data -->
+    <script>
+        // Initialize global variables for the active conversation
+        var initialConversationData = null;
+        {% if active_conversation %}
+        initialConversationData = {
+            phone: "{{ active_conversation.phone }}",
+            name: "{{ active_conversation.name }}"
+        };
+        {% endif %}
+    </script>
+
     <!-- Include the WhatsApp JavaScript file -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -979,7 +991,10 @@
             // Function to initialize WhatsApp functionality
             function initializeWhatsApp() {
 
-                let activeConversation = null;
+                // Initialize activeConversation with the default conversation from the server
+                let activeConversation = initialConversationData;
+
+                console.log('Initial activeConversation:', activeConversation);
                 let messageStatusInterval = null;
 
                 // Function to load conversation messages
