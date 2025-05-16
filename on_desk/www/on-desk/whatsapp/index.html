@@ -736,7 +736,7 @@
             cursor: pointer;
         }
     </style>
-    {% endblock %}
+    {% endblock page_css %}
 </head>
 
 <body>
@@ -1609,6 +1609,7 @@
             console.log('Message input:', document.querySelector('#message-input'));
             console.log('Chat messages container:', document.querySelector('.chat-messages'));
             console.log('Chat messages container by ID:', document.querySelector('#chat-messages'));
+            console.log('Conversation list:', document.querySelector('#conversation-list'));
 
             // Add click event directly to the button
             const sendBtn = document.querySelector('#send-message-btn');
@@ -1645,59 +1646,10 @@
             }
         }
 
-        // Create a default conversation if none exists
-        function createDefaultConversation() {
-            console.log('Creating default conversation');
-            if (!activeConversation) {
-                activeConversation = {
-                    phone: '+1234567890',
-                    name: 'Test Contact'
-                };
-
-                // Update UI to reflect the active conversation
-                const chatNameEl = document.querySelector('.chat-name');
-                if (chatNameEl) {
-                    chatNameEl.textContent = activeConversation.name;
-                }
-
-                const chatStatusEl = document.querySelector('.chat-status');
-                if (chatStatusEl) {
-                    chatStatusEl.textContent = 'Online';
-                }
-
-                // Enable the input
-                const chatInput = document.querySelector('.chat-input input');
-                const chatButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-
-                if (chatInput) {
-                    chatInput.disabled = false;
-                }
-
-                if (chatButton) {
-                    chatButton.disabled = false;
-                }
-
-                // Show chat on mobile
-                const whatsappGrid = document.querySelector('.whatsapp-grid');
-                if (whatsappGrid) {
-                    whatsappGrid.classList.add('show-chat');
-                }
-
-                console.log('Default conversation created:', activeConversation);
-            }
-        }
-
         // Initialize the UI
         initializeUI();
 
-        // Function to debug UI elements
-        function debugElements() {
-            console.log('Debugging UI elements:');
-            console.log('Send button:', document.querySelector('#send-message-btn'));
-            console.log('Message input:', document.querySelector('#message-input'));
-            console.log('Conversation list:', document.querySelector('#conversation-list'));
-            console.log('Chat messages container:', document.querySelector('.chat-messages'));
-        }
+
 
         // Debug elements after a short delay
         setTimeout(debugElements, 1000);
@@ -1706,6 +1658,7 @@
         function createDefaultConversation() {
             // Create a test conversation if none exists
             if (document.querySelectorAll('.conversation-item').length === 0) {
+                console.log('No conversations found, creating a default one');
                 const testPhone = '+1234567890';
                 const testName = 'Test Contact';
 
@@ -1718,11 +1671,14 @@
                     },
                     callback: function (response) {
                         if (response.message && response.message.success) {
+                            console.log('Default conversation created successfully');
                             // Refresh conversations list
                             refreshConversations();
 
                             // Load the new conversation
                             loadConversation(testPhone, testName);
+                        } else {
+                            console.error('Failed to create default conversation:', response);
                         }
                     }
                 });
@@ -1735,7 +1691,7 @@
         // Initial load of conversations
         refreshConversations();
     </script>
-    {% endblock %}
+    {% endblock page_js %}
 </body>
 
 </html>
