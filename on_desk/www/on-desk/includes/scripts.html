@@ -6,52 +6,29 @@
     // Load Frappe in a proper sequence
     document.addEventListener('DOMContentLoaded', function () {
         // Function to check if frappe is fully initialized
-        function isFrappeFullyInitialized() {
-            // Check if frappe exists and has the methods we need
-            if (typeof frappe === 'undefined') return false;
-
-            // Check if frappe.call exists and is a real function (not our temporary one)
-            if (typeof frappe.call !== 'function') return false;
-
-            // Check if frappe.require exists and is a real function (not our temporary one)
-            if (typeof frappe.require !== 'function') return false;
-
-            // Additional check: if we have our temporary frappe object, it won't have these properties
-            if (!frappe._assets_loaded && !frappe.assets) return false;
-
-            return true;
+        function isFrappeInitialized() {
+            return typeof frappe !== 'undefined' && typeof frappe.call === 'function';
         }
 
         // Function to dispatch the frappe_loaded event
         function dispatchFrappeLoaded() {
-            console.log('Dispatching frappe_loaded event');
             document.dispatchEvent(new Event('frappe_loaded'));
         }
 
-        // First check if frappe is already fully defined
-        if (isFrappeFullyInitialized()) {
-            console.log('Frappe is already fully initialized');
+        // First check if frappe is already defined
+        if (isFrappeInitialized()) {
             dispatchFrappeLoaded();
             return;
         }
 
-        // If frappe exists but is not fully initialized
+        // If frappe exists but call is not available
         if (typeof frappe !== 'undefined') {
-            console.log('Frappe exists but may not be fully initialized, waiting...');
-
-            // Try loading frappe-web.min.js to ensure all methods are available
+            // Try loading frappe-web.min.js
             var webScript = document.createElement('script');
             webScript.src = '/assets/js/frappe-web.min.js';
             webScript.onload = function () {
-                console.log('Frappe web bundle loaded');
-
-                // Check again after a short delay to allow initialization
+                // Check again after a short delay
                 setTimeout(function () {
-                    if (isFrappeFullyInitialized()) {
-                        console.log('Frappe is now fully initialized');
-                    } else {
-                        console.log('Frappe still not fully initialized after loading web bundle');
-                    }
                     dispatchFrappeLoaded();
                 }, 300);
             };
@@ -60,29 +37,16 @@
         }
 
         // If frappe doesn't exist at all
-        console.log('Loading Frappe core libraries from scratch...');
-
         // Create a script element to load provide.js first
         var provideScript = document.createElement('script');
         provideScript.src = '/assets/frappe/js/frappe/provide.js';
         provideScript.onload = function () {
-            console.log('Frappe provide.js loaded');
-
             // Now load the main frappe-web bundle
             var webScript = document.createElement('script');
             webScript.src = '/assets/js/frappe-web.min.js';
             webScript.onload = function () {
-                console.log('Frappe web bundle loaded');
-
-                // Check if frappe is fully initialized after a short delay
-                setTimeout(function () {
-                    if (isFrappeFullyInitialized()) {
-                        console.log('Frappe is fully initialized after loading');
-                    } else {
-                        console.log('Frappe not fully initialized after loading, proceeding anyway');
-                    }
-                    dispatchFrappeLoaded();
-                }, 300);
+                // Allow time for initialization
+                setTimeout(dispatchFrappeLoaded, 300);
             };
             document.head.appendChild(webScript);
         };
@@ -91,42 +55,34 @@
 
     // Define a temporary frappe object for use before the real one loads
     if (typeof frappe === 'undefined') {
-        console.warn('Creating temporary frappe object');
         window.frappe = {
             // Add a flag to identify this as our temporary object
             _isTemporaryFrappe: true,
 
             call: function (opts) {
-                console.log('TEMP FRAPPE: Queuing API call:', opts);
                 // Queue the call to be executed when frappe is loaded
                 document.addEventListener('frappe_loaded', function () {
                     if (typeof frappe.call === 'function' && !frappe._isTemporaryFrappe) {
-                        console.log('TEMP FRAPPE: Executing queued API call with real frappe');
                         frappe.call(opts);
                     } else {
-                        console.error('TEMP FRAPPE: Real frappe not available for queued call');
                         if (opts.error) {
-                            opts.error(new Error('Real frappe call method not available'));
+                            opts.error(new Error('Frappe call method not available'));
                         }
                     }
                 }, { once: true });
             },
 
             msgprint: function (opts) {
-                console.log('TEMP FRAPPE: Queuing message:', opts);
                 // Show a basic alert for now
                 alert(opts.message || 'An error occurred');
             },
 
             require: function (assets, callback) {
-                console.log('TEMP FRAPPE: Queuing require for:', assets);
                 // Queue the require to be executed when frappe is loaded
                 document.addEventListener('frappe_loaded', function () {
                     if (typeof frappe.require === 'function' && !frappe._isTemporaryFrappe) {
-                        console.log('TEMP FRAPPE: Executing queued require with real frappe');
                         frappe.require(assets, callback);
                     } else {
-                        console.log('TEMP FRAPPE: Real frappe.require not available, loading scripts directly');
                         // Try to load scripts manually
                         if (typeof assets === 'string') {
                             assets = [assets];

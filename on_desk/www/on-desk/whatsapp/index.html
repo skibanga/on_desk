@@ -932,95 +932,51 @@
     <!-- Include the WhatsApp JavaScript file -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('WhatsApp JS loaded, waiting for frappe...');
-
             // Listen for the frappe_loaded event
             document.addEventListener('frappe_loaded', function () {
-                console.log('Frappe loaded event received, initializing WhatsApp functionality');
-
-                // Check if we have the real frappe.require function
-                var isRealFrappeRequire = typeof frappe !== 'undefined' &&
-                    typeof frappe.require === 'function' &&
-                    (frappe._assets_loaded || frappe.assets);
-
-                if (isRealFrappeRequire) {
-                    console.log('Using real frappe.require to load additional dependencies');
-                    try {
-                        frappe.require([
-                            "/assets/frappe/js/frappe/request.js"
-                        ], function () {
-                            console.log('Additional dependencies loaded successfully via frappe.require');
-                            initializeWhatsApp();
-                        });
-                    } catch (e) {
-                        console.error('Error using frappe.require:', e);
-                        console.log('Falling back to direct script loading');
-                        loadScriptDirectly('/assets/frappe/js/frappe/request.js', function () {
-                            console.log('Additional dependencies loaded via direct method');
-                            initializeWhatsApp();
-                        });
-                    }
-                } else {
-                    console.log('Real frappe.require not available, loading dependencies directly');
-                    loadScriptDirectly('/assets/frappe/js/frappe/request.js', function () {
-                        console.log('Additional dependencies loaded via direct method');
-                        initializeWhatsApp();
-                    });
-                }
-
-                // Helper function to load scripts directly
-                function loadScriptDirectly(src, callback) {
-                    var script = document.createElement('script');
-                    script.src = src;
-                    script.onload = callback;
-                    script.onerror = function () {
-                        console.error('Failed to load script:', src);
-                        // Continue anyway
-                        callback();
-                    };
-                    document.head.appendChild(script);
-                }
+                // Load additional dependencies and initialize
+                loadDependencies(function () {
+                    initializeWhatsApp();
+                });
             }, { once: true });
 
-            // Function to check if frappe is fully initialized with real methods
-            function isRealFrappeInitialized() {
-                // Check if frappe exists and has the methods we need
-                if (typeof frappe === 'undefined') return false;
-
-                // Check if frappe.call exists and is a real function (not our temporary one)
-                if (typeof frappe.call !== 'function') return false;
-
-                // Check if frappe.require exists and is a real function (not our temporary one)
-                if (typeof frappe.require !== 'function') return false;
-
-                // Additional check: if we have our temporary frappe object, it won't have these properties
-                if (!frappe._assets_loaded && !frappe.assets) return false;
-
-                return true;
+            // Helper function to load dependencies
+            function loadDependencies(callback) {
+                // Try to use frappe.require if available
+                if (typeof frappe !== 'undefined' &&
+                    typeof frappe.require === 'function' &&
+                    !frappe._isTemporaryFrappe) {
+                    try {
+                        frappe.require(["/assets/frappe/js/frappe/request.js"], callback);
+                    } catch (e) {
+                        // Fallback to direct loading
+                        loadScriptDirectly('/assets/frappe/js/frappe/request.js', callback);
+                    }
+                } else {
+                    // Direct loading
+                    loadScriptDirectly('/assets/frappe/js/frappe/request.js', callback);
+                }
             }
 
-            // Check if frappe is already fully loaded with all required methods
-            if (isRealFrappeInitialized()) {
-                console.log('Frappe already fully loaded with real methods, dispatching event');
+            // Helper function to load scripts directly
+            function loadScriptDirectly(src, callback) {
+                var script = document.createElement('script');
+                script.src = src;
+                script.onload = callback;
+                script.onerror = function () {
+                    // Continue anyway if script fails to load
+                    callback();
+                };
+                document.head.appendChild(script);
+            }
+
+            // Check if frappe is already available
+            if (typeof frappe !== 'undefined' && typeof frappe.call === 'function') {
                 document.dispatchEvent(new Event('frappe_loaded'));
-            } else if (typeof frappe !== 'undefined') {
-                console.log('Frappe object exists but may not be fully initialized, waiting for complete load');
-                // Wait a short time to allow frappe to fully initialize
-                setTimeout(function () {
-                    if (isRealFrappeInitialized()) {
-                        console.log('Frappe now fully initialized with real methods, dispatching event');
-                        document.dispatchEvent(new Event('frappe_loaded'));
-                    } else {
-                        console.log('Frappe still not fully initialized, proceeding with fallbacks');
-                        // Proceed anyway with our fallbacks
-                        document.dispatchEvent(new Event('frappe_loaded'));
-                    }
-                }, 500);
             }
 
             // Function to initialize WhatsApp functionality
             function initializeWhatsApp() {
-                console.log('Initializing WhatsApp functionality');
 
                 let activeConversation = null;
                 let messageStatusInterval = null;
@@ -1721,9 +1677,6 @@
 
                 // Initialize the UI
                 initializeUI();
-
-                // Debug elements after a short delay
-                setTimeout(debugElements, 1000);
 
                 // Initial load of conversations
                 refreshConversations();
