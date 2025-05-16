@@ -997,7 +997,7 @@
                 console.log('Checking WhatsApp integration configuration...');
                 $.ajax({
                     type: 'GET',
-                    url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.api.get_whatsapp_settings',
+                    url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.od_whatsapp_integration.get_whatsapp_settings',
                     success: function (data) {
                         console.log('WhatsApp settings:', data);
                         if (!data.message || !data.message.enabled) {
@@ -1293,13 +1293,13 @@
                         }
 
                         // Log the method path for debugging
-                        console.log('API method path:', 'on_desk.www.on_desk.whatsapp.api.send_message');
+                        console.log('API method path:', 'on_desk.on_desk.www.on-desk.whatsapp.api.send_message');
 
                         // Check if the API endpoint is correctly configured
                         console.log('Checking API endpoint...');
                         $.ajax({
                             type: 'GET',
-                            url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.api.get_whatsapp_settings',
+                            url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.od_whatsapp_integration.get_whatsapp_settings',
                             success: function (data) {
                                 console.log('WhatsApp settings for sending:', data);
                                 if (!data.message || !data.message.enabled) {
@@ -1332,7 +1332,7 @@
                                 console.log('Trying direct AJAX call...');
                                 $.ajax({
                                     type: 'POST',
-                                    url: '/api/method/on_desk.www.on_desk.whatsapp.api.send_message',
+                                    url: '/api/method/on_desk.on_desk.www.on-desk.whatsapp.api.send_message',
                                     data: {
                                         phone_number: activeConversation.phone,
                                         message: message
@@ -1509,7 +1509,7 @@
                             console.log('Testing API connection...');
                             $.ajax({
                                 type: 'GET',
-                                url: '/api/method/on_desk.www.on_desk.whatsapp.api.test_api',
+                                url: '/api/method/on_desk.on_desk.www.on-desk.whatsapp.api.test_api',
                                 success: function (data) {
                                     console.log('Test API response:', data);
                                     alert('API connection successful! Check the console for details.');
