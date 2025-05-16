@@ -57,7 +57,7 @@
   },
   {
    "fieldname": "api_key",
-   "fieldtype": "Password",
+   "fieldtype": "Text",
    "in_list_view": 1,
    "label": "API Key",
    "reqd": 1
@@ -123,9 +123,10 @@
    "options": "OD WhatsApp Template Link"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-10 08:04:10.135164",
+ "modified": "2025-05-16 12:40:32.758830",
  "modified_by": "Administrator",
  "module": "On Desk",
  "name": "OD WhatsApp Integration",
@@ -154,6 +155,7 @@
   }
  ],
  "read_only": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
