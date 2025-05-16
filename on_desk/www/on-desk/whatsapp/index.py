@@ -85,9 +85,6 @@ def get_context(context):
     # Add socketio_port to context - this is used by frappe.realtime
     context.socketio_port = frappe.conf.get("socketio_port", 9000)
 
-    # Add flag to include frappe-web.bundle.js in the template
-    context.include_frappe_web_js = True
-
     return context
 
 

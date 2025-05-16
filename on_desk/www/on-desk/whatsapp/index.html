@@ -948,309 +948,306 @@
         var csrfToken = "{{ csrf_token }}";
     </script>
 
-    <!-- Include Frappe web JS bundle for real-time functionality -->
-    {% if include_frappe_web_js %}
-    <script src="/assets/js/frappe-web.bundle.js"></script>
-    {% endif %}
-
     <!-- Include the WhatsApp JavaScript file -->
     <script>
-        // Make socketio_port available to JavaScript - this is used by frappe.realtime
-        window.socketio_port = {% if socketio_port %}{{socketio_port}}{% else %}9000{% endif %};
+        // socketio_port is already set in base.html
 
-        document.addEventListener('DOMContentLoaded', function () {
-            // Listen for the frappe_loaded event
-            document.addEventListener('frappe_loaded', function () {
-                // Load additional dependencies and initialize
-                loadDependencies(function () {
-                    initializeWhatsApp();
-                });
-            }, { once: true });
+        // Set up real-time event listeners when Frappe is ready
+        frappe.ready(function () {
 
-            // Helper function to load dependencies
-            function loadDependencies(callback) {
-                // Try to use frappe.require if available
-                if (typeof frappe !== 'undefined' &&
-                    typeof frappe.require === 'function' &&
-                    !frappe._isTemporaryFrappe) {
-                    try {
-                        frappe.require(["/assets/frappe/js/frappe/request.js"], callback);
-                    } catch (e) {
-                        // Fallback to direct loading
+            document.addEventListener('DOMContentLoaded', function () {
+                // Listen for the frappe_loaded event
+                document.addEventListener('frappe_loaded', function () {
+                    // Load additional dependencies and initialize
+                    loadDependencies(function () {
+                        initializeWhatsApp();
+                    });
+                }, { once: true });
+
+                // Helper function to load dependencies
+                function loadDependencies(callback) {
+                    // Try to use frappe.require if available
+                    if (typeof frappe !== 'undefined' &&
+                        typeof frappe.require === 'function' &&
+                        !frappe._isTemporaryFrappe) {
+                        try {
+                            frappe.require(["/assets/frappe/js/frappe/request.js"], callback);
+                        } catch (e) {
+                            // Fallback to direct loading
+                            loadScriptDirectly('/assets/frappe/js/frappe/request.js', callback);
+                        }
+                    } else {
+                        // Direct loading
                         loadScriptDirectly('/assets/frappe/js/frappe/request.js', callback);
                     }
-                } else {
-                    // Direct loading
-                    loadScriptDirectly('/assets/frappe/js/frappe/request.js', callback);
                 }
-            }
 
-            // Helper function to load scripts directly
-            function loadScriptDirectly(src, callback) {
-                var script = document.createElement('script');
-                script.src = src;
-                script.onload = callback;
-                script.onerror = function () {
-                    // Continue anyway if script fails to load
-                    callback();
-                };
-                document.head.appendChild(script);
-            }
-
-            // Check if frappe is already available
-            if (typeof frappe !== 'undefined' && typeof frappe.call === 'function') {
-                document.dispatchEvent(new Event('frappe_loaded'));
-            }
-
-            // Function to initialize WhatsApp functionality
-            function initializeWhatsApp() {
-                // Check if WhatsApp integration is configured
-                console.log('Checking WhatsApp integration configuration...');
-                $.ajax({
-                    type: 'GET',
-                    url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.od_whatsapp_integration.get_whatsapp_settings',
-                    headers: {
-                        'X-Frappe-CSRF-Token': csrfToken
-                    },
-                    success: function (data) {
-                        console.log('WhatsApp settings:', data);
-                        if (!data.message || !data.message.enabled) {
-                            console.error('WhatsApp integration is not enabled');
-                            alert('WhatsApp integration is not enabled. Please contact your administrator.');
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('Error checking WhatsApp settings:', xhr, status, error);
-                    }
-                });
-
-                // Initialize activeConversation with the default conversation from the server
-                let activeConversation = initialConversationData;
-
-                console.log('Initial activeConversation:', activeConversation);
-                let messageStatusInterval = null;
-
-                // Function to load conversation messages
-                function loadConversation(phoneNumber, contactName) {
-                    console.log('Loading conversation for:', phoneNumber, contactName);
-
-                    // Clear any existing status update interval
-                    if (messageStatusInterval) {
-                        clearInterval(messageStatusInterval);
-                    }
-
-                    // Set active conversation
-                    activeConversation = {
-                        phone: phoneNumber,
-                        name: contactName
+                // Helper function to load scripts directly
+                function loadScriptDirectly(src, callback) {
+                    var script = document.createElement('script');
+                    script.src = src;
+                    script.onload = callback;
+                    script.onerror = function () {
+                        // Continue anyway if script fails to load
+                        callback();
                     };
-                    console.log('Active conversation set:', activeConversation);
-
-                    // Update UI
-                    const chatNameEl = document.querySelector('.chat-name');
-                    const chatStatusEl = document.querySelector('.chat-status');
-
-                    if (chatNameEl) {
-                        chatNameEl.textContent = contactName;
-                    } else {
-                        console.error('Chat name element not found');
-                    }
-
-                    if (chatStatusEl) {
-                        chatStatusEl.textContent = 'Loading...';
-                    } else {
-                        console.error('Chat status element not found');
-                    }
-
-                    // Enable the input
-                    const chatInput = document.querySelector('.chat-input input');
-                    const chatButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-
-                    if (chatInput) {
-                        chatInput.disabled = false;
-                    } else {
-                        console.error('Chat input element not found');
-                    }
-
-                    if (chatButton) {
-                        chatButton.disabled = false;
-                    } else {
-                        console.error('Chat button element not found');
-                    }
-
-                    // Show chat on mobile
-                    const whatsappGrid = document.querySelector('.whatsapp-grid');
-                    if (whatsappGrid) {
-                        whatsappGrid.classList.add('show-chat');
-                    } else {
-                        console.error('WhatsApp grid element not found');
-                    }
-
-                    console.log('Fetching messages for phone number:', phoneNumber);
-
-                    // Check if frappe is defined
-                    if (typeof frappe === 'undefined') {
-                        console.error('Frappe is not defined. Cannot load conversation.');
-                        if (chatStatusEl) {
-                            chatStatusEl.textContent = 'Error: Frappe not loaded';
-                        }
-                        return;
-                    }
-
-                    // Fetch messages
-                    try {
-                        frappe.call({
-                            method: 'on_desk.on_desk.www.on-desk.whatsapp.api.get_conversation_messages',
-                            args: {
-                                phone_number: phoneNumber
-                            },
-                            callback: function (response) {
-                                console.log('API response for messages:', response);
-
-                                if (response.message) {
-                                    renderMessages(response.message);
-
-                                    if (chatStatusEl) {
-                                        chatStatusEl.textContent = 'Online';
-                                    }
-
-                                    // Start polling for message status updates
-                                    startMessageStatusUpdates();
-                                } else {
-                                    console.error('No messages returned from API');
-                                    if (chatStatusEl) {
-                                        chatStatusEl.textContent = 'No messages';
-                                    }
-                                }
-                            },
-                            error: function (err) {
-                                console.error('Error loading conversation:', err);
-                                if (chatStatusEl) {
-                                    chatStatusEl.textContent = 'Error loading messages';
-                                }
-                            }
-                        });
-                    } catch (error) {
-                        console.error('Exception in loadConversation:', error);
-                        if (chatStatusEl) {
-                            chatStatusEl.textContent = 'Error: ' + error.message;
-                        }
-                    }
+                    document.head.appendChild(script);
                 }
 
-                // Function to render messages
-                function renderMessages(messages) {
-                    console.log('Rendering messages:', messages);
+                // Check if frappe is already available
+                if (typeof frappe !== 'undefined' && typeof frappe.call === 'function') {
+                    document.dispatchEvent(new Event('frappe_loaded'));
+                }
 
-                    const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
-                    console.log('Messages container:', messagesContainer);
+                // Function to initialize WhatsApp functionality
+                function initializeWhatsApp() {
+                    // Check if WhatsApp integration is configured
+                    console.log('Checking WhatsApp integration configuration...');
+                    $.ajax({
+                        type: 'GET',
+                        url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.od_whatsapp_integration.get_whatsapp_settings',
+                        headers: {
+                            'X-Frappe-CSRF-Token': csrfToken
+                        },
+                        success: function (data) {
+                            console.log('WhatsApp settings:', data);
+                            if (!data.message || !data.message.enabled) {
+                                console.error('WhatsApp integration is not enabled');
+                                alert('WhatsApp integration is not enabled. Please contact your administrator.');
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error('Error checking WhatsApp settings:', xhr, status, error);
+                        }
+                    });
 
-                    if (!messagesContainer) {
-                        console.error('Messages container not found');
-                        return;
+                    // Initialize activeConversation with the default conversation from the server
+                    let activeConversation = initialConversationData;
+
+                    console.log('Initial activeConversation:', activeConversation);
+                    let messageStatusInterval = null;
+
+                    // Function to load conversation messages
+                    function loadConversation(phoneNumber, contactName) {
+                        console.log('Loading conversation for:', phoneNumber, contactName);
+
+                        // Clear any existing status update interval
+                        if (messageStatusInterval) {
+                            clearInterval(messageStatusInterval);
+                        }
+
+                        // Set active conversation
+                        activeConversation = {
+                            phone: phoneNumber,
+                            name: contactName
+                        };
+                        console.log('Active conversation set:', activeConversation);
+
+                        // Update UI
+                        const chatNameEl = document.querySelector('.chat-name');
+                        const chatStatusEl = document.querySelector('.chat-status');
+
+                        if (chatNameEl) {
+                            chatNameEl.textContent = contactName;
+                        } else {
+                            console.error('Chat name element not found');
+                        }
+
+                        if (chatStatusEl) {
+                            chatStatusEl.textContent = 'Loading...';
+                        } else {
+                            console.error('Chat status element not found');
+                        }
+
+                        // Enable the input
+                        const chatInput = document.querySelector('.chat-input input');
+                        const chatButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+
+                        if (chatInput) {
+                            chatInput.disabled = false;
+                        } else {
+                            console.error('Chat input element not found');
+                        }
+
+                        if (chatButton) {
+                            chatButton.disabled = false;
+                        } else {
+                            console.error('Chat button element not found');
+                        }
+
+                        // Show chat on mobile
+                        const whatsappGrid = document.querySelector('.whatsapp-grid');
+                        if (whatsappGrid) {
+                            whatsappGrid.classList.add('show-chat');
+                        } else {
+                            console.error('WhatsApp grid element not found');
+                        }
+
+                        console.log('Fetching messages for phone number:', phoneNumber);
+
+                        // Check if frappe is defined
+                        if (typeof frappe === 'undefined') {
+                            console.error('Frappe is not defined. Cannot load conversation.');
+                            if (chatStatusEl) {
+                                chatStatusEl.textContent = 'Error: Frappe not loaded';
+                            }
+                            return;
+                        }
+
+                        // Fetch messages
+                        try {
+                            frappe.call({
+                                method: 'on_desk.on_desk.www.on-desk.whatsapp.api.get_conversation_messages',
+                                args: {
+                                    phone_number: phoneNumber
+                                },
+                                callback: function (response) {
+                                    console.log('API response for messages:', response);
+
+                                    if (response.message) {
+                                        renderMessages(response.message);
+
+                                        if (chatStatusEl) {
+                                            chatStatusEl.textContent = 'Online';
+                                        }
+
+                                        // Start polling for message status updates
+                                        startMessageStatusUpdates();
+                                    } else {
+                                        console.error('No messages returned from API');
+                                        if (chatStatusEl) {
+                                            chatStatusEl.textContent = 'No messages';
+                                        }
+                                    }
+                                },
+                                error: function (err) {
+                                    console.error('Error loading conversation:', err);
+                                    if (chatStatusEl) {
+                                        chatStatusEl.textContent = 'Error loading messages';
+                                    }
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Exception in loadConversation:', error);
+                            if (chatStatusEl) {
+                                chatStatusEl.textContent = 'Error: ' + error.message;
+                            }
+                        }
                     }
 
-                    messagesContainer.innerHTML = '';
+                    // Function to render messages
+                    function renderMessages(messages) {
+                        console.log('Rendering messages:', messages);
 
-                    if (messages.length === 0) {
-                        console.log('No messages to display');
-                        const emptyState = document.createElement('div');
-                        emptyState.classList.add('empty-state');
-                        emptyState.innerHTML = `
+                        const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
+                        console.log('Messages container:', messagesContainer);
+
+                        if (!messagesContainer) {
+                            console.error('Messages container not found');
+                            return;
+                        }
+
+                        messagesContainer.innerHTML = '';
+
+                        if (messages.length === 0) {
+                            console.log('No messages to display');
+                            const emptyState = document.createElement('div');
+                            emptyState.classList.add('empty-state');
+                            emptyState.innerHTML = `
                         <div class="empty-state-icon">
                             <i class="uil uil-comment-alt-message"></i>
                         </div>
                         <div class="empty-state-title">No messages yet</div>
                         <div class="empty-state-text">Start the conversation by sending a message</div>
                     `;
-                        messagesContainer.appendChild(emptyState);
-                        return;
-                    }
+                            messagesContainer.appendChild(emptyState);
+                            return;
+                        }
 
-                    console.log('Adding date divider');
-                    // Add date divider
-                    const dateDivider = document.createElement('div');
-                    dateDivider.classList.add('date-divider');
-                    dateDivider.textContent = 'Today';
-                    messagesContainer.appendChild(dateDivider);
+                        console.log('Adding date divider');
+                        // Add date divider
+                        const dateDivider = document.createElement('div');
+                        dateDivider.classList.add('date-divider');
+                        dateDivider.textContent = 'Today';
+                        messagesContainer.appendChild(dateDivider);
 
-                    console.log('Adding message elements');
-                    messages.forEach(message => {
-                        console.log('Processing message:', message);
+                        console.log('Adding message elements');
+                        messages.forEach(message => {
+                            console.log('Processing message:', message);
 
-                        const messageElement = document.createElement('div');
-                        messageElement.classList.add('message');
-                        messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
-                        messageElement.dataset.messageId = message.message_id;
+                            const messageElement = document.createElement('div');
+                            messageElement.classList.add('message');
+                            messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
+                            messageElement.dataset.messageId = message.message_id;
 
-                        let messageContent = `
+                            let messageContent = `
                         ${message.message}
                         <div class="message-time">${message.time}</div>
                     `;
 
-                        if (message.direction === 'Outgoing') {
-                            let statusIcon = '';
-                            let statusClass = '';
+                            if (message.direction === 'Outgoing') {
+                                let statusIcon = '';
+                                let statusClass = '';
 
-                            if (message.status === 'Sent') {
-                                statusIcon = 'uil-check';
-                                statusClass = 'status-sent';
-                            } else if (message.status === 'Delivered') {
-                                statusIcon = 'uil-check-double';
-                                statusClass = 'status-delivered';
-                            } else if (message.status === 'Read') {
-                                statusIcon = 'uil-check-double';
-                                statusClass = 'status-read';
-                            } else if (message.status === 'Failed') {
-                                statusIcon = 'uil-times';
-                                statusClass = 'status-failed';
-                            }
+                                if (message.status === 'Sent') {
+                                    statusIcon = 'uil-check';
+                                    statusClass = 'status-sent';
+                                } else if (message.status === 'Delivered') {
+                                    statusIcon = 'uil-check-double';
+                                    statusClass = 'status-delivered';
+                                } else if (message.status === 'Read') {
+                                    statusIcon = 'uil-check-double';
+                                    statusClass = 'status-read';
+                                } else if (message.status === 'Failed') {
+                                    statusIcon = 'uil-times';
+                                    statusClass = 'status-failed';
+                                }
 
-                            messageContent += `
+                                messageContent += `
                             <div class="message-status">
                                 <span>${message.status}</span>
                                 <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
                             </div>
                         `;
+                            }
+
+                            messageElement.innerHTML = messageContent;
+                            messagesContainer.appendChild(messageElement);
+                        });
+
+                        console.log('Scrolling to bottom');
+                        // Scroll to bottom
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+
+                    // Function to send a message
+                    function sendMessage(message) {
+                        console.log('sendMessage called with message:', message);
+                        console.log('activeConversation:', activeConversation);
+
+                        if (!activeConversation || !message) {
+                            console.error('Cannot send message: activeConversation or message is missing');
+                            return;
                         }
 
-                        messageElement.innerHTML = messageContent;
-                        messagesContainer.appendChild(messageElement);
-                    });
+                        // Disable the send button
+                        const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                        console.log('Send button for disabling:', sendButton);
 
-                    console.log('Scrolling to bottom');
-                    // Scroll to bottom
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
+                        if (sendButton) {
+                            sendButton.disabled = true;
+                            sendButton.innerHTML = '<i class="uil uil-spinner-alt fa-spin"></i>';
+                        }
 
-                // Function to send a message
-                function sendMessage(message) {
-                    console.log('sendMessage called with message:', message);
-                    console.log('activeConversation:', activeConversation);
+                        // Add temporary message to UI
+                        const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
+                        console.log('Messages container:', messagesContainer);
 
-                    if (!activeConversation || !message) {
-                        console.error('Cannot send message: activeConversation or message is missing');
-                        return;
-                    }
-
-                    // Disable the send button
-                    const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-                    console.log('Send button for disabling:', sendButton);
-
-                    if (sendButton) {
-                        sendButton.disabled = true;
-                        sendButton.innerHTML = '<i class="uil uil-spinner-alt fa-spin"></i>';
-                    }
-
-                    // Add temporary message to UI
-                    const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
-                    console.log('Messages container:', messagesContainer);
-
-                    const tempId = 'temp-' + Date.now();
-                    const messageElement = document.createElement('div');
-                    messageElement.classList.add('message', 'message-outgoing');
-                    messageElement.dataset.messageId = tempId;
-                    messageElement.innerHTML = `
+                        const tempId = 'temp-' + Date.now();
+                        const messageElement = document.createElement('div');
+                        messageElement.classList.add('message', 'message-outgoing');
+                        messageElement.dataset.messageId = tempId;
+                        messageElement.innerHTML = `
                     ${message}
                     <div class="message-time">Just now</div>
                     <div class="message-status">
@@ -1259,132 +1256,77 @@
                     </div>
                 `;
 
-                    if (messagesContainer) {
-                        messagesContainer.appendChild(messageElement);
-                        // Scroll to bottom
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    } else {
-                        console.error('Messages container not found');
-                    }
+                        if (messagesContainer) {
+                            messagesContainer.appendChild(messageElement);
+                            // Scroll to bottom
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        } else {
+                            console.error('Messages container not found');
+                        }
 
-                    console.log('Calling API to send message');
+                        console.log('Calling API to send message');
 
-                    // Check if frappe is defined
-                    if (typeof frappe === 'undefined') {
-                        console.error('Frappe is not defined. Cannot send message.');
+                        // Check if frappe is defined
+                        if (typeof frappe === 'undefined') {
+                            console.error('Frappe is not defined. Cannot send message.');
 
-                        // Update the temporary message to show error
-                        const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
-                        if (tempMessage) {
-                            tempMessage.querySelector('.message-status').innerHTML = `
+                            // Update the temporary message to show error
+                            const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
+                            if (tempMessage) {
+                                tempMessage.querySelector('.message-status').innerHTML = `
                                 <span>Failed</span>
                                 <i class="uil uil-times status-icon status-failed"></i>
                             `;
-                        }
+                            }
 
-                        // Re-enable the send button
-                        const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-                        if (sendButton) {
-                            sendButton.disabled = false;
-                            sendButton.innerHTML = '<i class="uil uil-message"></i>';
-                        }
+                            // Re-enable the send button
+                            const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                            if (sendButton) {
+                                sendButton.disabled = false;
+                                sendButton.innerHTML = '<i class="uil uil-message"></i>';
+                            }
 
-                        return;
-                    }
-
-                    // Send the message via API
-                    try {
-                        console.log('Sending message to API with args:', {
-                            phone_number: activeConversation.phone,
-                            message: message
-                        });
-
-                        // Check if frappe.call is available
-                        if (typeof frappe === 'undefined' || typeof frappe.call !== 'function') {
-                            console.error('frappe.call is not available');
-                            alert('Error: frappe.call is not available. Please refresh the page and try again.');
                             return;
                         }
 
-                        // Log the method path for debugging
-                        console.log('API method path:', 'on_desk.www.on-desk.whatsapp.api.send_message');
+                        // Send the message via API
+                        try {
+                            console.log('Sending message to API with args:', {
+                                phone_number: activeConversation.phone,
+                                message: message
+                            });
 
-                        // Check if the API endpoint is correctly configured
-                        console.log('Checking API endpoint...');
-                        $.ajax({
-                            type: 'GET',
-                            url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.od_whatsapp_integration.get_whatsapp_settings',
-                            headers: {
-                                'X-Frappe-CSRF-Token': csrfToken
-                            },
-                            success: function (data) {
-                                console.log('WhatsApp settings for sending:', data);
-                                if (!data.message || !data.message.enabled) {
-                                    console.error('WhatsApp integration is not enabled');
-                                    alert('WhatsApp integration is not enabled. Please contact your administrator.');
+                            // Check if frappe.call is available
+                            if (typeof frappe === 'undefined' || typeof frappe.call !== 'function') {
+                                console.error('frappe.call is not available');
+                                alert('Error: frappe.call is not available. Please refresh the page and try again.');
+                                return;
+                            }
 
-                                    // Update the temporary message to show error
-                                    const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
-                                    if (tempMessage) {
-                                        tempMessage.querySelector('.message-status').innerHTML = `
-                                            <span>Failed: WhatsApp integration is not enabled</span>
-                                            <i class="uil uil-times status-icon status-failed"></i>
-                                        `;
-                                    }
+                            // Log the method path for debugging
+                            console.log('API method path:', 'on_desk.www.on-desk.whatsapp.api.send_message');
 
-                                    // Re-enable the send button
-                                    const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-                                    if (sendButton) {
-                                        sendButton.disabled = false;
-                                        sendButton.innerHTML = '<i class="uil uil-message"></i>';
-                                    }
+                            // Check if the API endpoint is correctly configured
+                            console.log('Checking API endpoint...');
+                            $.ajax({
+                                type: 'GET',
+                                url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.od_whatsapp_integration.get_whatsapp_settings',
+                                headers: {
+                                    'X-Frappe-CSRF-Token': csrfToken
+                                },
+                                success: function (data) {
+                                    console.log('WhatsApp settings for sending:', data);
+                                    if (!data.message || !data.message.enabled) {
+                                        console.error('WhatsApp integration is not enabled');
+                                        alert('WhatsApp integration is not enabled. Please contact your administrator.');
 
-                                    return;
-                                }
-
-                                // If WhatsApp is enabled, proceed with sending the message
-                                console.log('WhatsApp is enabled, proceeding with message sending');
-
-                                // Try with a direct AJAX call to see if we can reach the server
-                                console.log('Trying direct AJAX call...');
-                                $.ajax({
-                                    type: 'POST',
-                                    url: '/api/method/on_desk.www.on-desk.whatsapp.api.send_message',
-                                    headers: {
-                                        'X-Frappe-CSRF-Token': csrfToken
-                                    },
-                                    data: {
-                                        phone_number: activeConversation.phone,
-                                        message: message
-                                    },
-                                    success: function (data) {
-                                        console.log('AJAX success:', data);
-                                        // Update the temporary message with the real message ID
-                                        const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
-                                        if (tempMessage) {
-                                            tempMessage.dataset.messageId = data.message.message_id || tempId;
-                                            tempMessage.querySelector('.message-status').innerHTML = `
-                                                <span>Sent</span>
-                                                <i class="uil uil-check status-icon status-sent"></i>
-                                            `;
-                                        }
-
-                                        // Re-enable the send button
-                                        const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-                                        if (sendButton) {
-                                            sendButton.disabled = false;
-                                            sendButton.innerHTML = '<i class="uil uil-message"></i>';
-                                        }
-                                    },
-                                    error: function (xhr, status, error) {
-                                        console.error('AJAX error:', xhr, status, error);
                                         // Update the temporary message to show error
                                         const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
                                         if (tempMessage) {
                                             tempMessage.querySelector('.message-status').innerHTML = `
-                                                <span>Failed: ${error || 'Unknown error'}</span>
-                                                <i class="uil uil-times status-icon status-failed"></i>
-                                            `;
+                                            <span>Failed: WhatsApp integration is not enabled</span>
+                                            <i class="uil uil-times status-icon status-failed"></i>
+                                        `;
                                         }
 
                                         // Re-enable the send button
@@ -1393,306 +1335,361 @@
                                             sendButton.disabled = false;
                                             sendButton.innerHTML = '<i class="uil uil-message"></i>';
                                         }
+
+                                        return;
                                     }
-                                });
+
+                                    // If WhatsApp is enabled, proceed with sending the message
+                                    console.log('WhatsApp is enabled, proceeding with message sending');
+
+                                    // Try with a direct AJAX call to see if we can reach the server
+                                    console.log('Trying direct AJAX call...');
+                                    $.ajax({
+                                        type: 'POST',
+                                        url: '/api/method/on_desk.www.on-desk.whatsapp.api.send_message',
+                                        headers: {
+                                            'X-Frappe-CSRF-Token': csrfToken
+                                        },
+                                        data: {
+                                            phone_number: activeConversation.phone,
+                                            message: message
+                                        },
+                                        success: function (data) {
+                                            console.log('AJAX success:', data);
+                                            // Update the temporary message with the real message ID
+                                            const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
+                                            if (tempMessage) {
+                                                tempMessage.dataset.messageId = data.message.message_id || tempId;
+                                                tempMessage.querySelector('.message-status').innerHTML = `
+                                                <span>Sent</span>
+                                                <i class="uil uil-check status-icon status-sent"></i>
+                                            `;
+                                            }
+
+                                            // Re-enable the send button
+                                            const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                                            if (sendButton) {
+                                                sendButton.disabled = false;
+                                                sendButton.innerHTML = '<i class="uil uil-message"></i>';
+                                            }
+                                        },
+                                        error: function (xhr, status, error) {
+                                            console.error('AJAX error:', xhr, status, error);
+                                            // Update the temporary message to show error
+                                            const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
+                                            if (tempMessage) {
+                                                tempMessage.querySelector('.message-status').innerHTML = `
+                                                <span>Failed: ${error || 'Unknown error'}</span>
+                                                <i class="uil uil-times status-icon status-failed"></i>
+                                            `;
+                                            }
+
+                                            // Re-enable the send button
+                                            const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                                            if (sendButton) {
+                                                sendButton.disabled = false;
+                                                sendButton.innerHTML = '<i class="uil uil-message"></i>';
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Exception in sendMessage:', error);
+                            console.error('Exception stack:', error.stack);
+
+                            // Re-enable the send button
+                            const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                            if (sendButton) {
+                                sendButton.disabled = false;
+                                sendButton.innerHTML = '<i class="uil uil-message"></i>';
                             }
-                        });
-                    } catch (error) {
-                        console.error('Exception in sendMessage:', error);
-                        console.error('Exception stack:', error.stack);
 
-                        // Re-enable the send button
-                        const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-                        if (sendButton) {
-                            sendButton.disabled = false;
-                            sendButton.innerHTML = '<i class="uil uil-message"></i>';
-                        }
-
-                        // Update the temporary message to show error
-                        const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
-                        if (tempMessage) {
-                            tempMessage.querySelector('.message-status').innerHTML = `
+                            // Update the temporary message to show error
+                            const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
+                            if (tempMessage) {
+                                tempMessage.querySelector('.message-status').innerHTML = `
                                 <span>Failed: ${error.message || 'Unknown error'}</span>
                                 <i class="uil uil-times status-icon status-failed"></i>
                             `;
-                        }
-
-                        alert('Error sending message: ' + (error.message || 'Unknown error'));
-                    }
-                }
-
-                // Function to initialize the UI event handlers
-                function initializeUI() {
-                    console.log('Initializing UI event handlers');
-
-                    // Set up conversation click handlers
-                    setupConversationClickHandlers();
-
-                    // Set up send message handler
-                    let sendButton = document.querySelector('#send-message-btn');
-                    console.log('Send button:', sendButton);
-
-                    // If we can't find the button by ID, try to find it by its position in the chat-input
-                    if (!sendButton) {
-                        const chatInput = document.querySelector('.chat-input');
-                        if (chatInput) {
-                            const button = chatInput.querySelector('button');
-                            if (button) {
-                                console.log('Found send button by position:', button);
-                                button.id = 'send-message-btn';  // Add the ID for future reference
-                                sendButton = button;
                             }
+
+                            alert('Error sending message: ' + (error.message || 'Unknown error'));
                         }
                     }
 
-                    const messageInput = document.querySelector('#message-input');
-                    console.log('Message input:', messageInput);
+                    // Function to initialize the UI event handlers
+                    function initializeUI() {
+                        console.log('Initializing UI event handlers');
 
-                    if (sendButton) {
-                        // Remove any existing event listeners by cloning the button
-                        const newButton = sendButton.cloneNode(true);
-                        sendButton.parentNode.replaceChild(newButton, sendButton);
-                        sendButton = newButton;
+                        // Set up conversation click handlers
+                        setupConversationClickHandlers();
 
-                        // Add the event listener
-                        sendButton.addEventListener('click', function () {
-                            const message = messageInput.value.trim();
-                            if (message) {
-                                sendMessage(message);
-                                messageInput.value = '';
+                        // Set up send message handler
+                        let sendButton = document.querySelector('#send-message-btn');
+                        console.log('Send button:', sendButton);
+
+                        // If we can't find the button by ID, try to find it by its position in the chat-input
+                        if (!sendButton) {
+                            const chatInput = document.querySelector('.chat-input');
+                            if (chatInput) {
+                                const button = chatInput.querySelector('button');
+                                if (button) {
+                                    console.log('Found send button by position:', button);
+                                    button.id = 'send-message-btn';  // Add the ID for future reference
+                                    sendButton = button;
+                                }
                             }
-                        });
-                    } else {
-                        console.error('Send button not found!');
+                        }
 
-                        // Try to find the button again by class
-                        const chatInputButton = document.querySelector('.chat-input button');
-                        if (chatInputButton) {
-                            chatInputButton.addEventListener('click', function () {
+                        const messageInput = document.querySelector('#message-input');
+                        console.log('Message input:', messageInput);
+
+                        if (sendButton) {
+                            // Remove any existing event listeners by cloning the button
+                            const newButton = sendButton.cloneNode(true);
+                            sendButton.parentNode.replaceChild(newButton, sendButton);
+                            sendButton = newButton;
+
+                            // Add the event listener
+                            sendButton.addEventListener('click', function () {
                                 const message = messageInput.value.trim();
                                 if (message) {
                                     sendMessage(message);
                                     messageInput.value = '';
                                 }
                             });
+                        } else {
+                            console.error('Send button not found!');
+
+                            // Try to find the button again by class
+                            const chatInputButton = document.querySelector('.chat-input button');
+                            if (chatInputButton) {
+                                chatInputButton.addEventListener('click', function () {
+                                    const message = messageInput.value.trim();
+                                    if (message) {
+                                        sendMessage(message);
+                                        messageInput.value = '';
+                                    }
+                                });
+                            }
                         }
-                    }
 
-                    // Allow sending with Enter key
-                    if (messageInput) {
-                        messageInput.addEventListener('keypress', function (e) {
-                            if (e.key === 'Enter') {
-                                if (sendButton) {
-                                    sendButton.click();
-                                }
-                            }
-                        });
-                    }
-
-                    // Set up new conversation button
-                    const newConversationButton = document.querySelector('#new-conversation-btn');
-                    if (newConversationButton) {
-                        newConversationButton.addEventListener('click', showNewConversationModal);
-                    }
-
-                    // Set up empty state new conversation button
-                    const emptyNewConversationBtn = document.querySelector('#empty-new-conversation-btn');
-                    if (emptyNewConversationBtn) {
-                        emptyNewConversationBtn.addEventListener('click', showNewConversationModal);
-                    }
-
-                    // Set up back button for mobile
-                    const backButton = document.querySelector('#back-button');
-                    if (backButton) {
-                        backButton.addEventListener('click', function () {
-                            const whatsappGrid = document.querySelector('.whatsapp-grid');
-                            if (whatsappGrid) {
-                                whatsappGrid.classList.remove('show-chat');
-                            }
-                        });
-                    }
-
-                    // Set up refresh button
-                    const refreshButton = document.querySelector('#refresh-messages-btn');
-                    if (refreshButton) {
-                        refreshButton.addEventListener('click', function () {
-                            if (activeConversation) {
-                                loadConversation(activeConversation.phone, activeConversation.name);
-                            }
-                        });
-                    }
-
-                    // Set up test API button
-                    const testApiButton = document.querySelector('#test-api-btn');
-                    if (testApiButton) {
-                        testApiButton.addEventListener('click', function () {
-                            console.log('Testing API connection...');
-                            $.ajax({
-                                type: 'GET',
-                                url: '/api/method/on_desk.www.on-desk.whatsapp.api.test_api',
-                                headers: {
-                                    'X-Frappe-CSRF-Token': csrfToken
-                                },
-                                success: function (data) {
-                                    console.log('Test API response:', data);
-                                    alert('API connection successful! Check the console for details.');
-                                },
-                                error: function (xhr, status, error) {
-                                    console.error('Test API error:', xhr, status, error);
-                                    alert('API connection failed. Check the console for details.');
+                        // Allow sending with Enter key
+                        if (messageInput) {
+                            messageInput.addEventListener('keypress', function (e) {
+                                if (e.key === 'Enter') {
+                                    if (sendButton) {
+                                        sendButton.click();
+                                    }
                                 }
                             });
-                        });
-                    }
-
-                    // Make sure send button works
-                    setTimeout(ensureEventHandlers, 100);
-                }
-
-                // Function to start message status updates
-                function startMessageStatusUpdates() {
-                    console.log('Starting message status updates');
-
-                    // Get all outgoing messages in the current conversation
-                    const outgoingMessages = document.querySelectorAll('.message.message-outgoing');
-                    if (!outgoingMessages.length) {
-                        console.log('No outgoing messages to update status for');
-                        return;
-                    }
-
-                    // Collect message IDs
-                    const messageIds = [];
-                    outgoingMessages.forEach(msg => {
-                        const messageId = msg.dataset.messageId;
-                        if (messageId && !messageId.startsWith('temp-')) {
-                            messageIds.push(messageId);
                         }
-                    });
 
-                    if (!messageIds.length) {
-                        console.log('No valid message IDs to update status for');
-                        return;
-                    }
+                        // Set up new conversation button
+                        const newConversationButton = document.querySelector('#new-conversation-btn');
+                        if (newConversationButton) {
+                            newConversationButton.addEventListener('click', showNewConversationModal);
+                        }
 
-                    console.log('Fetching initial status for message IDs:', messageIds);
+                        // Set up empty state new conversation button
+                        const emptyNewConversationBtn = document.querySelector('#empty-new-conversation-btn');
+                        if (emptyNewConversationBtn) {
+                            emptyNewConversationBtn.addEventListener('click', showNewConversationModal);
+                        }
 
-                    // Make a single API call to get the current status of all messages
-                    if (typeof frappe !== 'undefined' && typeof frappe.call === 'function') {
-                        frappe.call({
-                            method: 'on_desk.www.on-desk.whatsapp.api.get_message_statuses',
-                            args: {
-                                message_ids: messageIds
-                            },
-                            callback: function (response) {
-                                if (response.message) {
-                                    console.log('Initial message statuses:', response.message);
-
-                                    // Update the status of each message
-                                    response.message.forEach(msg => {
-                                        const messageEl = document.querySelector(`[data-message-id="${msg.message_id}"]`);
-                                        if (messageEl) {
-                                            const statusEl = messageEl.querySelector('.message-status');
-                                            if (statusEl) {
-                                                let statusIcon = '';
-                                                let statusClass = '';
-
-                                                if (msg.status === 'Sent') {
-                                                    statusIcon = 'uil-check';
-                                                    statusClass = 'status-sent';
-                                                } else if (msg.status === 'Delivered') {
-                                                    statusIcon = 'uil-check-double';
-                                                    statusClass = 'status-delivered';
-                                                } else if (msg.status === 'Read') {
-                                                    statusIcon = 'uil-check-double';
-                                                    statusClass = 'status-read';
-                                                } else if (msg.status === 'Failed') {
-                                                    statusIcon = 'uil-times';
-                                                    statusClass = 'status-failed';
-                                                }
-
-                                                statusEl.innerHTML = `
-                                                    <span>${msg.status}</span>
-                                                    <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
-                                                `;
-                                            }
-                                        }
-                                    });
+                        // Set up back button for mobile
+                        const backButton = document.querySelector('#back-button');
+                        if (backButton) {
+                            backButton.addEventListener('click', function () {
+                                const whatsappGrid = document.querySelector('.whatsapp-grid');
+                                if (whatsappGrid) {
+                                    whatsappGrid.classList.remove('show-chat');
                                 }
-                            }
-                        });
+                            });
+                        }
+
+                        // Set up refresh button
+                        const refreshButton = document.querySelector('#refresh-messages-btn');
+                        if (refreshButton) {
+                            refreshButton.addEventListener('click', function () {
+                                if (activeConversation) {
+                                    loadConversation(activeConversation.phone, activeConversation.name);
+                                }
+                            });
+                        }
+
+                        // Set up test API button
+                        const testApiButton = document.querySelector('#test-api-btn');
+                        if (testApiButton) {
+                            testApiButton.addEventListener('click', function () {
+                                console.log('Testing API connection...');
+                                $.ajax({
+                                    type: 'GET',
+                                    url: '/api/method/on_desk.www.on-desk.whatsapp.api.test_api',
+                                    headers: {
+                                        'X-Frappe-CSRF-Token': csrfToken
+                                    },
+                                    success: function (data) {
+                                        console.log('Test API response:', data);
+                                        alert('API connection successful! Check the console for details.');
+                                    },
+                                    error: function (xhr, status, error) {
+                                        console.error('Test API error:', xhr, status, error);
+                                        alert('API connection failed. Check the console for details.');
+                                    }
+                                });
+                            });
+                        }
+
+                        // Make sure send button works
+                        setTimeout(ensureEventHandlers, 100);
                     }
 
-                    // Note: Further status updates will come through real-time events
-                    console.log('Real-time status updates are now active');
+                    // Function to start message status updates
+                    function startMessageStatusUpdates() {
+                        console.log('Starting message status updates');
 
-                    // Set up a fallback polling mechanism in case real-time events don't work
-                    setupFallbackPolling();
-                }
-
-                // Function to set up fallback polling for new messages
-                function setupFallbackPolling() {
-                    console.log('Setting up fallback polling for new messages...');
-
-                    // Poll for new messages every 30 seconds
-                    const pollInterval = setInterval(function () {
-                        if (!activeConversation) {
+                        // Get all outgoing messages in the current conversation
+                        const outgoingMessages = document.querySelectorAll('.message.message-outgoing');
+                        if (!outgoingMessages.length) {
+                            console.log('No outgoing messages to update status for');
                             return;
                         }
 
-                        console.log('Polling for new messages...');
-
-                        // Refresh the current conversation
-                        loadConversation(activeConversation.phone, activeConversation.name);
-
-                        // Refresh the conversations list
-                        refreshConversations();
-                    }, 30000); // 30 seconds
-
-                    // Store the interval ID for cleanup if needed
-                    window.whatsappPollInterval = pollInterval;
-
-                    console.log('Fallback polling set up successfully');
-                }
-
-                // Function to refresh conversations list
-                function refreshConversations() {
-                    // Check if frappe is defined
-                    if (typeof frappe === 'undefined') {
-                        console.error('Frappe is not defined. Cannot refresh conversations.');
-                        return;
-                    }
-
-                    try {
-                        frappe.call({
-                            method: 'on_desk.on_desk.www.on-desk.whatsapp.api.get_conversations',
-                            callback: function (response) {
-                                if (response.message) {
-                                    renderConversations(response.message);
-                                }
-                            },
-                            error: function (err) {
-                                console.error('Error refreshing conversations:', err);
+                        // Collect message IDs
+                        const messageIds = [];
+                        outgoingMessages.forEach(msg => {
+                            const messageId = msg.dataset.messageId;
+                            if (messageId && !messageId.startsWith('temp-')) {
+                                messageIds.push(messageId);
                             }
                         });
-                    } catch (error) {
-                        console.error('Exception in refreshConversations:', error);
+
+                        if (!messageIds.length) {
+                            console.log('No valid message IDs to update status for');
+                            return;
+                        }
+
+                        console.log('Fetching initial status for message IDs:', messageIds);
+
+                        // Make a single API call to get the current status of all messages
+                        if (typeof frappe !== 'undefined' && typeof frappe.call === 'function') {
+                            frappe.call({
+                                method: 'on_desk.www.on-desk.whatsapp.api.get_message_statuses',
+                                args: {
+                                    message_ids: messageIds
+                                },
+                                callback: function (response) {
+                                    if (response.message) {
+                                        console.log('Initial message statuses:', response.message);
+
+                                        // Update the status of each message
+                                        response.message.forEach(msg => {
+                                            const messageEl = document.querySelector(`[data-message-id="${msg.message_id}"]`);
+                                            if (messageEl) {
+                                                const statusEl = messageEl.querySelector('.message-status');
+                                                if (statusEl) {
+                                                    let statusIcon = '';
+                                                    let statusClass = '';
+
+                                                    if (msg.status === 'Sent') {
+                                                        statusIcon = 'uil-check';
+                                                        statusClass = 'status-sent';
+                                                    } else if (msg.status === 'Delivered') {
+                                                        statusIcon = 'uil-check-double';
+                                                        statusClass = 'status-delivered';
+                                                    } else if (msg.status === 'Read') {
+                                                        statusIcon = 'uil-check-double';
+                                                        statusClass = 'status-read';
+                                                    } else if (msg.status === 'Failed') {
+                                                        statusIcon = 'uil-times';
+                                                        statusClass = 'status-failed';
+                                                    }
+
+                                                    statusEl.innerHTML = `
+                                                    <span>${msg.status}</span>
+                                                    <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
+                                                `;
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+
+                        // Note: Further status updates will come through real-time events
+                        console.log('Real-time status updates are now active');
+
+                        // Set up a fallback polling mechanism in case real-time events don't work
+                        setupFallbackPolling();
                     }
-                }
 
-                // Function to render conversations
-                function renderConversations(conversations) {
-                    const conversationsList = document.querySelector('#conversation-list');
-                    if (!conversationsList) {
-                        console.error('Conversation list element not found');
-                        return;
+                    // Function to set up fallback polling for new messages
+                    function setupFallbackPolling() {
+                        console.log('Setting up fallback polling for new messages...');
+
+                        // Poll for new messages every 30 seconds
+                        const pollInterval = setInterval(function () {
+                            if (!activeConversation) {
+                                return;
+                            }
+
+                            console.log('Polling for new messages...');
+
+                            // Refresh the current conversation
+                            loadConversation(activeConversation.phone, activeConversation.name);
+
+                            // Refresh the conversations list
+                            refreshConversations();
+                        }, 30000); // 30 seconds
+
+                        // Store the interval ID for cleanup if needed
+                        window.whatsappPollInterval = pollInterval;
+
+                        console.log('Fallback polling set up successfully');
                     }
 
-                    conversationsList.innerHTML = '';
+                    // Function to refresh conversations list
+                    function refreshConversations() {
+                        // Check if frappe is defined
+                        if (typeof frappe === 'undefined') {
+                            console.error('Frappe is not defined. Cannot refresh conversations.');
+                            return;
+                        }
 
-                    if (conversations.length === 0) {
-                        const emptyState = document.createElement('div');
-                        emptyState.classList.add('empty-state');
-                        emptyState.innerHTML = `
+                        try {
+                            frappe.call({
+                                method: 'on_desk.on_desk.www.on-desk.whatsapp.api.get_conversations',
+                                callback: function (response) {
+                                    if (response.message) {
+                                        renderConversations(response.message);
+                                    }
+                                },
+                                error: function (err) {
+                                    console.error('Error refreshing conversations:', err);
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Exception in refreshConversations:', error);
+                        }
+                    }
+
+                    // Function to render conversations
+                    function renderConversations(conversations) {
+                        const conversationsList = document.querySelector('#conversation-list');
+                        if (!conversationsList) {
+                            console.error('Conversation list element not found');
+                            return;
+                        }
+
+                        conversationsList.innerHTML = '';
+
+                        if (conversations.length === 0) {
+                            const emptyState = document.createElement('div');
+                            emptyState.classList.add('empty-state');
+                            emptyState.innerHTML = `
                         <div class="empty-state-icon">
                             <i class="uil uil-comment-alt-dots"></i>
                         </div>
@@ -1702,37 +1699,37 @@
                             <i class="uil uil-plus"></i> New Conversation
                         </button>
                     `;
-                        conversationsList.appendChild(emptyState);
+                            conversationsList.appendChild(emptyState);
 
-                        // Re-attach event listener to the new button
-                        const emptyNewConversationBtn = document.querySelector('#empty-new-conversation-btn');
-                        if (emptyNewConversationBtn) {
-                            emptyNewConversationBtn.addEventListener('click', showNewConversationModal);
+                            // Re-attach event listener to the new button
+                            const emptyNewConversationBtn = document.querySelector('#empty-new-conversation-btn');
+                            if (emptyNewConversationBtn) {
+                                emptyNewConversationBtn.addEventListener('click', showNewConversationModal);
+                            }
+
+                            return;
                         }
 
-                        return;
-                    }
+                        conversations.forEach((conversation, index) => {
+                            const item = document.createElement('li');
+                            item.classList.add('conversation-item');
+                            if (activeConversation && activeConversation.phone === conversation.phone) {
+                                item.classList.add('active');
+                            }
 
-                    conversations.forEach((conversation, index) => {
-                        const item = document.createElement('li');
-                        item.classList.add('conversation-item');
-                        if (activeConversation && activeConversation.phone === conversation.phone) {
-                            item.classList.add('active');
-                        }
+                            let avatarContent = '';
+                            if (conversation.image) {
+                                avatarContent = `<img src="${conversation.image}" alt="${conversation.name}">`;
+                            } else {
+                                avatarContent = conversation.name[0];
+                            }
 
-                        let avatarContent = '';
-                        if (conversation.image) {
-                            avatarContent = `<img src="${conversation.image}" alt="${conversation.name}">`;
-                        } else {
-                            avatarContent = conversation.name[0];
-                        }
+                            let unreadBadge = '';
+                            if (conversation.unread_count) {
+                                unreadBadge = `<div class="unread-badge">${conversation.unread_count}</div>`;
+                            }
 
-                        let unreadBadge = '';
-                        if (conversation.unread_count) {
-                            unreadBadge = `<div class="unread-badge">${conversation.unread_count}</div>`;
-                        }
-
-                        item.innerHTML = `
+                            item.innerHTML = `
                         <div class="conversation-avatar">
                             ${avatarContent}
                             <div class="online-indicator"></div>
@@ -1747,296 +1744,264 @@
                         </div>
                     `;
 
-                        item.dataset.phone = conversation.phone;
-                        item.dataset.name = conversation.name;
+                            item.dataset.phone = conversation.phone;
+                            item.dataset.name = conversation.name;
 
-                        conversationsList.appendChild(item);
-                    });
-
-                    // Add click handlers to the new conversation items
-                    setupConversationClickHandlers();
-                }
-
-                // Function to set up conversation click handlers
-                function setupConversationClickHandlers() {
-                    const conversationItems = document.querySelectorAll('.conversation-item');
-                    conversationItems.forEach(item => {
-                        item.addEventListener('click', function () {
-                            conversationItems.forEach(i => i.classList.remove('active'));
-                            this.classList.add('active');
-
-                            const phone = this.dataset.phone;
-                            const name = this.dataset.name;
-
-                            if (phone && name) {
-                                loadConversation(phone, name);
-                            }
+                            conversationsList.appendChild(item);
                         });
-                    });
-                }
 
-                // Function to show new conversation modal
-                function showNewConversationModal() {
-                    // Check if frappe is defined
-                    if (typeof frappe === 'undefined') {
-                        console.error('Frappe is not defined. Cannot show new conversation modal.');
-                        alert('Error: System is not fully loaded. Please refresh the page and try again.');
-                        return;
+                        // Add click handlers to the new conversation items
+                        setupConversationClickHandlers();
                     }
 
-                    // Check if frappe.prompt is available
-                    if (typeof frappe.prompt !== 'function') {
-                        console.error('frappe.prompt is not available');
-                        alert('Error: Dialog system is not available. Please refresh the page and try again.');
-                        return;
+                    // Function to set up conversation click handlers
+                    function setupConversationClickHandlers() {
+                        const conversationItems = document.querySelectorAll('.conversation-item');
+                        conversationItems.forEach(item => {
+                            item.addEventListener('click', function () {
+                                conversationItems.forEach(i => i.classList.remove('active'));
+                                this.classList.add('active');
+
+                                const phone = this.dataset.phone;
+                                const name = this.dataset.name;
+
+                                if (phone && name) {
+                                    loadConversation(phone, name);
+                                }
+                            });
+                        });
                     }
 
-                    try {
-                        // Use Frappe's dialog system
-                        frappe.prompt([
-                            {
-                                fieldname: 'phone_number',
-                                label: 'Phone Number',
-                                fieldtype: 'Data',
-                                reqd: 1,
-                                description: 'Enter phone number with country code (e.g., +1234567890)'
-                            },
-                            {
-                                fieldname: 'contact_name',
-                                label: 'Contact Name',
-                                fieldtype: 'Data',
-                                reqd: 1
-                            }
-                        ],
-                            function (values) {
-                                // Create a new conversation
-                                try {
-                                    frappe.call({
-                                        method: 'on_desk.on_desk.www.on-desk.whatsapp.api.create_conversation',
-                                        args: {
-                                            phone_number: values.phone_number,
-                                            contact_name: values.contact_name
-                                        },
-                                        callback: function (response) {
-                                            if (response.message && response.message.success) {
-                                                // Refresh conversations list
-                                                refreshConversations();
+                    // Function to show new conversation modal
+                    function showNewConversationModal() {
+                        // Check if frappe is defined
+                        if (typeof frappe === 'undefined') {
+                            console.error('Frappe is not defined. Cannot show new conversation modal.');
+                            alert('Error: System is not fully loaded. Please refresh the page and try again.');
+                            return;
+                        }
 
-                                                // Load the new conversation
-                                                loadConversation(values.phone_number, values.contact_name);
-                                            } else {
-                                                if (typeof frappe.msgprint === 'function') {
-                                                    frappe.msgprint({
-                                                        title: __('Error'),
-                                                        indicator: 'red',
-                                                        message: __('Failed to create conversation. Please try again.')
-                                                    });
+                        // Check if frappe.prompt is available
+                        if (typeof frappe.prompt !== 'function') {
+                            console.error('frappe.prompt is not available');
+                            alert('Error: Dialog system is not available. Please refresh the page and try again.');
+                            return;
+                        }
+
+                        try {
+                            // Use Frappe's dialog system
+                            frappe.prompt([
+                                {
+                                    fieldname: 'phone_number',
+                                    label: 'Phone Number',
+                                    fieldtype: 'Data',
+                                    reqd: 1,
+                                    description: 'Enter phone number with country code (e.g., +1234567890)'
+                                },
+                                {
+                                    fieldname: 'contact_name',
+                                    label: 'Contact Name',
+                                    fieldtype: 'Data',
+                                    reqd: 1
+                                }
+                            ],
+                                function (values) {
+                                    // Create a new conversation
+                                    try {
+                                        frappe.call({
+                                            method: 'on_desk.on_desk.www.on-desk.whatsapp.api.create_conversation',
+                                            args: {
+                                                phone_number: values.phone_number,
+                                                contact_name: values.contact_name
+                                            },
+                                            callback: function (response) {
+                                                if (response.message && response.message.success) {
+                                                    // Refresh conversations list
+                                                    refreshConversations();
+
+                                                    // Load the new conversation
+                                                    loadConversation(values.phone_number, values.contact_name);
                                                 } else {
-                                                    console.error('frappe.msgprint is not available');
-                                                    alert('Failed to create conversation. Please try again.');
+                                                    if (typeof frappe.msgprint === 'function') {
+                                                        frappe.msgprint({
+                                                            title: __('Error'),
+                                                            indicator: 'red',
+                                                            message: __('Failed to create conversation. Please try again.')
+                                                        });
+                                                    } else {
+                                                        console.error('frappe.msgprint is not available');
+                                                        alert('Failed to create conversation. Please try again.');
+                                                    }
                                                 }
+                                            },
+                                            error: function (err) {
+                                                console.error('Error creating conversation:', err);
+                                                alert('Error creating conversation. Please try again.');
                                             }
-                                        },
-                                        error: function (err) {
-                                            console.error('Error creating conversation:', err);
-                                            alert('Error creating conversation. Please try again.');
-                                        }
-                                    });
-                                } catch (error) {
-                                    console.error('Exception in create conversation:', error);
-                                    alert('Error creating conversation: ' + error.message);
-                                }
-                            },
-                            'New Conversation',
-                            'Create'
-                        );
-                    } catch (error) {
-                        console.error('Exception in showNewConversationModal:', error);
-                        alert('Error showing dialog: ' + error.message);
-                    }
-                }
-
-                // Function to ensure UI elements have proper event handlers
-                function ensureEventHandlers() {
-                    // Add direct click event to send button if it exists
-                    const sendBtn = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-                    if (sendBtn) {
-                        // Remove any existing event listeners by cloning the button
-                        const newSendBtn = sendBtn.cloneNode(true);
-                        sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
-
-                        newSendBtn.addEventListener('click', function () {
-                            const msgInput = document.querySelector('#message-input');
-                            if (msgInput && msgInput.value.trim()) {
-                                sendMessage(msgInput.value.trim());
-                                msgInput.value = '';
-                            }
-                        });
-                    }
-
-                    // Add form submit handler
-                    const chatForm = document.querySelector('.chat-input');
-                    if (chatForm) {
-                        chatForm.addEventListener('submit', function (e) {
-                            e.preventDefault();
-                            const msgInput = document.querySelector('#message-input');
-                            if (msgInput && msgInput.value.trim()) {
-                                sendMessage(msgInput.value.trim());
-                                msgInput.value = '';
-                            }
-                            return false;
-                        });
-                    }
-
-                    // Add Enter key handler to message input
-                    const msgInput = document.querySelector('#message-input');
-                    if (msgInput) {
-                        msgInput.addEventListener('keypress', function (e) {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const message = this.value.trim();
-                                if (message) {
-                                    sendMessage(message);
-                                    this.value = '';
-                                }
-                            }
-                        });
-                    }
-                }
-
-                // Initialize the UI
-                initializeUI();
-
-                // Ensure all event handlers are properly set up
-                ensureEventHandlers();
-
-                // Initial load of conversations
-                refreshConversations();
-
-                // Initialize frappe.realtime
-                initializeRealtime();
-
-                // Set up real-time event listeners
-                setupRealtimeEvents();
-
-                // Function to initialize frappe.realtime
-                function initializeRealtime() {
-                    console.log('Initializing frappe.realtime...');
-
-                    if (typeof frappe === 'undefined') {
-                        console.error('frappe is not defined. Cannot initialize realtime.');
-                        return;
-                    }
-
-                    // Check if frappe.realtime exists
-                    if (!frappe.realtime) {
-                        console.error('frappe.realtime is not defined. Make sure frappe-web.bundle.js is loaded.');
-                        return;
-                    }
-
-                    try {
-                        // Get socketio port from window or use default 9000
-                        const socketio_port = window.socketio_port || 9000;
-                        console.log('Using socketio_port:', socketio_port);
-
-                        // Initialize realtime with lazy connection
-                        // This is the standard Frappe way to initialize realtime
-                        frappe.realtime.init(socketio_port, true);
-                        console.log('frappe.realtime initialized successfully');
-                    } catch (error) {
-                        console.error('Error initializing frappe.realtime:', error);
-                    }
-                }
-
-                // Function to set up real-time event listeners
-                function setupRealtimeEvents() {
-                    console.log('Setting up real-time event listeners...');
-
-                    // Check if frappe.realtime is available
-                    if (typeof frappe === 'undefined' || !frappe.realtime) {
-                        console.error('frappe.realtime is not available. Real-time updates will not work.');
-                        console.log('Using fallback polling mechanism instead.');
-                        setupFallbackPolling();
-                        return;
-                    }
-
-                    // Listen for incoming WhatsApp messages
-                    frappe.realtime.on('whatsapp_message_received', function (data) {
-                        console.log('Real-time event received: whatsapp_message_received', data);
-
-                        // If this message is for the active conversation, refresh the messages
-                        if (activeConversation && data.from_number === activeConversation.phone) {
-                            console.log('Refreshing active conversation with new message');
-                            loadConversation(activeConversation.phone, activeConversation.name);
-                        }
-
-                        // Refresh the conversations list to show the new message
-                        refreshConversations();
-
-                        // Show notification if the message is not for the active conversation
-                        if (!activeConversation || data.from_number !== activeConversation.phone) {
-                            // Create a notification
-                            if ("Notification" in window && Notification.permission === "granted") {
-                                const notification = new Notification("New WhatsApp Message", {
-                                    body: `From: ${data.from_number}\nMessage: ${data.message}`,
-                                    icon: "/assets/on_desk/img/icons/whatsapp-icon.png"
-                                });
-
-                                // Open the conversation when notification is clicked
-                                notification.onclick = function () {
-                                    window.focus();
-                                    // Find the conversation item and click it
-                                    const conversationItem = document.querySelector(`.conversation-item[data-phone="${data.from_number}"]`);
-                                    if (conversationItem) {
-                                        conversationItem.click();
+                                        });
+                                    } catch (error) {
+                                        console.error('Exception in create conversation:', error);
+                                        alert('Error creating conversation: ' + error.message);
                                     }
-                                };
-                            }
+                                },
+                                'New Conversation',
+                                'Create'
+                            );
+                        } catch (error) {
+                            console.error('Exception in showNewConversationModal:', error);
+                            alert('Error showing dialog: ' + error.message);
                         }
-                    });
+                    }
 
-                    // Listen for WhatsApp message status updates
-                    frappe.realtime.on('whatsapp_message_status_update', function (data) {
-                        console.log('Real-time event received: whatsapp_message_status_update', data);
+                    // Function to ensure UI elements have proper event handlers
+                    function ensureEventHandlers() {
+                        // Add direct click event to send button if it exists
+                        const sendBtn = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                        if (sendBtn) {
+                            // Remove any existing event listeners by cloning the button
+                            const newSendBtn = sendBtn.cloneNode(true);
+                            sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
 
-                        // Find the message element by message_id and update its status
-                        const messageEl = document.querySelector(`[data-message-id="${data.message_id}"]`);
-                        if (messageEl) {
-                            const statusEl = messageEl.querySelector('.message-status');
-                            if (statusEl) {
-                                let statusIcon = '';
-                                let statusClass = '';
-
-                                if (data.status === 'Sent') {
-                                    statusIcon = 'uil-check';
-                                    statusClass = 'status-sent';
-                                } else if (data.status === 'Delivered') {
-                                    statusIcon = 'uil-check-double';
-                                    statusClass = 'status-delivered';
-                                } else if (data.status === 'Read') {
-                                    statusIcon = 'uil-check-double';
-                                    statusClass = 'status-read';
-                                } else if (data.status === 'Failed') {
-                                    statusIcon = 'uil-times';
-                                    statusClass = 'status-failed';
+                            newSendBtn.addEventListener('click', function () {
+                                const msgInput = document.querySelector('#message-input');
+                                if (msgInput && msgInput.value.trim()) {
+                                    sendMessage(msgInput.value.trim());
+                                    msgInput.value = '';
                                 }
+                            });
+                        }
 
-                                statusEl.innerHTML = `
+                        // Add form submit handler
+                        const chatForm = document.querySelector('.chat-input');
+                        if (chatForm) {
+                            chatForm.addEventListener('submit', function (e) {
+                                e.preventDefault();
+                                const msgInput = document.querySelector('#message-input');
+                                if (msgInput && msgInput.value.trim()) {
+                                    sendMessage(msgInput.value.trim());
+                                    msgInput.value = '';
+                                }
+                                return false;
+                            });
+                        }
+
+                        // Add Enter key handler to message input
+                        const msgInput = document.querySelector('#message-input');
+                        if (msgInput) {
+                            msgInput.addEventListener('keypress', function (e) {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const message = this.value.trim();
+                                    if (message) {
+                                        sendMessage(message);
+                                        this.value = '';
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    // Initialize the UI
+                    initializeUI();
+
+                    // Ensure all event handlers are properly set up
+                    ensureEventHandlers();
+
+                    // Initial load of conversations
+                    refreshConversations();
+
+                    // Set up real-time event listeners
+                    setupRealtimeEvents();
+
+                    // Function to set up real-time event listeners
+                    function setupRealtimeEvents() {
+                        console.log('Setting up real-time event listeners...');
+
+                        // Check if frappe.realtime is available
+                        if (typeof frappe === 'undefined' || !frappe.realtime) {
+                            console.error('frappe.realtime is not available. Real-time updates will not work.');
+                            console.log('Using fallback polling mechanism instead.');
+                            setupFallbackPolling();
+                            return;
+                        }
+
+                        // Listen for incoming WhatsApp messages
+                        frappe.realtime.on('whatsapp_message_received', function (data) {
+                            console.log('Real-time event received: whatsapp_message_received', data);
+
+                            // If this message is for the active conversation, refresh the messages
+                            if (activeConversation && data.from_number === activeConversation.phone) {
+                                console.log('Refreshing active conversation with new message');
+                                loadConversation(activeConversation.phone, activeConversation.name);
+                            }
+
+                            // Refresh the conversations list to show the new message
+                            refreshConversations();
+
+                            // Show notification if the message is not for the active conversation
+                            if (!activeConversation || data.from_number !== activeConversation.phone) {
+                                // Create a notification
+                                if ("Notification" in window && Notification.permission === "granted") {
+                                    const notification = new Notification("New WhatsApp Message", {
+                                        body: `From: ${data.from_number}\nMessage: ${data.message}`,
+                                        icon: "/assets/on_desk/img/icons/whatsapp-icon.png"
+                                    });
+
+                                    // Open the conversation when notification is clicked
+                                    notification.onclick = function () {
+                                        window.focus();
+                                        // Find the conversation item and click it
+                                        const conversationItem = document.querySelector(`.conversation-item[data-phone="${data.from_number}"]`);
+                                        if (conversationItem) {
+                                            conversationItem.click();
+                                        }
+                                    };
+                                }
+                            }
+                        });
+
+                        // Listen for WhatsApp message status updates
+                        frappe.realtime.on('whatsapp_message_status_update', function (data) {
+                            console.log('Real-time event received: whatsapp_message_status_update', data);
+
+                            // Find the message element by message_id and update its status
+                            const messageEl = document.querySelector(`[data-message-id="${data.message_id}"]`);
+                            if (messageEl) {
+                                const statusEl = messageEl.querySelector('.message-status');
+                                if (statusEl) {
+                                    let statusIcon = '';
+                                    let statusClass = '';
+
+                                    if (data.status === 'Sent') {
+                                        statusIcon = 'uil-check';
+                                        statusClass = 'status-sent';
+                                    } else if (data.status === 'Delivered') {
+                                        statusIcon = 'uil-check-double';
+                                        statusClass = 'status-delivered';
+                                    } else if (data.status === 'Read') {
+                                        statusIcon = 'uil-check-double';
+                                        statusClass = 'status-read';
+                                    } else if (data.status === 'Failed') {
+                                        statusIcon = 'uil-times';
+                                        statusClass = 'status-failed';
+                                    }
+
+                                    statusEl.innerHTML = `
                                     <span>${data.status}</span>
                                     <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
                                 `;
+                                }
                             }
+                        });
+
+                        // Request notification permission if not already granted
+                        if ("Notification" in window && Notification.permission !== "granted") {
+                            Notification.requestPermission();
                         }
-                    });
 
-                    // Request notification permission if not already granted
-                    if ("Notification" in window && Notification.permission !== "granted") {
-                        Notification.requestPermission();
+                        console.log('Real-time event listeners set up successfully');
                     }
-
-                    console.log('Real-time event listeners set up successfully');
-                }
-            }
+                });
         });
     </script>
     {% endblock %}
