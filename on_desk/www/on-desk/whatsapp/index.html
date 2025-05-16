@@ -990,6 +990,22 @@
 
             // Function to initialize WhatsApp functionality
             function initializeWhatsApp() {
+                // Check if WhatsApp integration is configured
+                console.log('Checking WhatsApp integration configuration...');
+                $.ajax({
+                    type: 'GET',
+                    url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.api.get_whatsapp_settings',
+                    success: function (data) {
+                        console.log('WhatsApp settings:', data);
+                        if (!data.message || !data.message.enabled) {
+                            console.error('WhatsApp integration is not enabled');
+                            alert('WhatsApp integration is not enabled. Please contact your administrator.');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error checking WhatsApp settings:', xhr, status, error);
+                    }
+                });
 
                 // Initialize activeConversation with the default conversation from the server
                 let activeConversation = initialConversationData;
@@ -1266,129 +1282,101 @@
                             message: message
                         });
 
-                        // Send the message directly
-                        frappe.call({
-                            method: 'on_desk.on_desk.www.on-desk.whatsapp.api.send_message',
-                            args: {
-                                phone_number: activeConversation.phone,
-                                message: message
-                            },
-                            callback: function (response) {
-                                console.log('API response:', response);
+                        // Check if frappe.call is available
+                        if (typeof frappe === 'undefined' || typeof frappe.call !== 'function') {
+                            console.error('frappe.call is not available');
+                            alert('Error: frappe.call is not available. Please refresh the page and try again.');
+                            return;
+                        }
 
-                                // Debug: Log the full response structure
-                                console.log('API response structure:', JSON.stringify(response));
+                        // Log the method path for debugging
+                        console.log('API method path:', 'on_desk.on_desk.www.on-desk.whatsapp.api.send_message');
 
-                                // Re-enable the send button
-                                const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-                                if (sendButton) {
-                                    sendButton.disabled = false;
-                                    sendButton.innerHTML = '<i class="uil uil-message"></i>';
-                                }
+                        // Check if the API endpoint is correctly configured
+                        console.log('Checking API endpoint...');
+                        $.ajax({
+                            type: 'GET',
+                            url: '/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.api.get_whatsapp_settings',
+                            success: function (data) {
+                                console.log('WhatsApp settings for sending:', data);
+                                if (!data.message || !data.message.enabled) {
+                                    console.error('WhatsApp integration is not enabled');
+                                    alert('WhatsApp integration is not enabled. Please contact your administrator.');
 
-                                if (response.message && response.message.success) {
-                                    console.log('Message sent successfully with ID:', response.message.message_id);
-
-                                    // Update the temporary message with the real message ID
-                                    const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
-                                    if (tempMessage) {
-                                        tempMessage.dataset.messageId = response.message.message_id;
-                                        tempMessage.querySelector('.message-status').innerHTML = `
-                                        <span>Sent</span>
-                                        <i class="uil uil-check status-icon status-sent"></i>
-                                    `;
-                                    } else {
-                                        console.error('Temporary message element not found');
-                                    }
-
-                                    // Start polling for status updates
-                                    startMessageStatusUpdates();
-                                } else {
-                                    console.error('Failed to send message:', response);
-
-                                    // Show error
+                                    // Update the temporary message to show error
                                     const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
                                     if (tempMessage) {
                                         tempMessage.querySelector('.message-status').innerHTML = `
-                                        <span>Failed</span>
-                                        <i class="uil uil-times status-icon status-failed"></i>
-                                    `;
+                                            <span>Failed: WhatsApp integration is not enabled</span>
+                                            <i class="uil uil-times status-icon status-failed"></i>
+                                        `;
                                     }
 
-                                    if (typeof frappe.msgprint === 'function') {
-                                        frappe.msgprint({
-                                            title: __('Error'),
-                                            indicator: 'red',
-                                            message: __('Failed to send message. Please try again.')
-                                        });
-                                    } else {
-                                        console.error('frappe.msgprint is not available');
-                                        alert('Failed to send message. Please try again.');
+                                    // Re-enable the send button
+                                    const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                                    if (sendButton) {
+                                        sendButton.disabled = false;
+                                        sendButton.innerHTML = '<i class="uil uil-message"></i>';
                                     }
-                                }
-                            },
-                            error: function (err) {
-                                console.error('Error sending message:', err);
 
-                                // Debug: Log the full error structure
-                                console.error('Error details:', JSON.stringify(err));
-
-                                // Check if there's a specific error message
-                                let errorMessage = 'Failed to send message. Please try again.';
-                                if (err && err.message) {
-                                    errorMessage = err.message;
-                                } else if (err && err.statusText) {
-                                    errorMessage = err.statusText;
-                                } else if (typeof err === 'string') {
-                                    errorMessage = err;
+                                    return;
                                 }
 
-                                console.error('Error message:', errorMessage);
+                                // If WhatsApp is enabled, proceed with sending the message
+                                console.log('WhatsApp is enabled, proceeding with message sending');
 
-                                // Re-enable the send button
-                                const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
-                                if (sendButton) {
-                                    sendButton.disabled = false;
-                                    sendButton.innerHTML = '<i class="uil uil-message"></i>';
-                                }
+                                // Try with a direct AJAX call to see if we can reach the server
+                                console.log('Trying direct AJAX call...');
+                                $.ajax({
+                                    type: 'POST',
+                                    url: '/api/method/on_desk.on_desk.www.on-desk.whatsapp.api.send_message',
+                                    data: {
+                                        phone_number: activeConversation.phone,
+                                        message: message
+                                    },
+                                    success: function (data) {
+                                        console.log('AJAX success:', data);
+                                        // Update the temporary message with the real message ID
+                                        const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
+                                        if (tempMessage) {
+                                            tempMessage.dataset.messageId = data.message.message_id || tempId;
+                                            tempMessage.querySelector('.message-status').innerHTML = `
+                                                <span>Sent</span>
+                                                <i class="uil uil-check status-icon status-sent"></i>
+                                            `;
+                                        }
 
-                                // Update the temporary message to show error
-                                const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
-                                if (tempMessage) {
-                                    tempMessage.querySelector('.message-status').innerHTML = `
-                                        <span>Failed: ${errorMessage}</span>
-                                        <i class="uil uil-times status-icon status-failed"></i>
-                                    `;
-                                }
+                                        // Re-enable the send button
+                                        const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                                        if (sendButton) {
+                                            sendButton.disabled = false;
+                                            sendButton.innerHTML = '<i class="uil uil-message"></i>';
+                                        }
+                                    },
+                                    error: function (xhr, status, error) {
+                                        console.error('AJAX error:', xhr, status, error);
+                                        // Update the temporary message to show error
+                                        const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
+                                        if (tempMessage) {
+                                            tempMessage.querySelector('.message-status').innerHTML = `
+                                                <span>Failed: ${error || 'Unknown error'}</span>
+                                                <i class="uil uil-times status-icon status-failed"></i>
+                                            `;
+                                        }
 
-                                if (typeof frappe.msgprint === 'function') {
-                                    frappe.msgprint({
-                                        title: __('Error'),
-                                        indicator: 'red',
-                                        message: __('Failed to send message. Please try again.')
-                                    });
-                                } else {
-                                    console.error('frappe.msgprint is not available');
-                                    alert('Failed to send message. Please try again.');
-                                }
+                                        // Re-enable the send button
+                                        const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
+                                        if (sendButton) {
+                                            sendButton.disabled = false;
+                                            sendButton.innerHTML = '<i class="uil uil-message"></i>';
+                                        }
+                                    }
+                                });
                             }
                         });
                     } catch (error) {
                         console.error('Exception in sendMessage:', error);
-
-                        // Debug: Log the full error structure
-                        console.error('Exception details:', error);
                         console.error('Exception stack:', error.stack);
-
-                        // Check if there's a specific error message
-                        let errorMessage = 'Unknown error';
-                        if (error && error.message) {
-                            errorMessage = error.message;
-                        } else if (typeof error === 'string') {
-                            errorMessage = error;
-                        }
-
-                        console.error('Exception message:', errorMessage);
 
                         // Re-enable the send button
                         const sendButton = document.querySelector('#send-message-btn') || document.querySelector('.chat-input button');
@@ -1401,12 +1389,12 @@
                         const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
                         if (tempMessage) {
                             tempMessage.querySelector('.message-status').innerHTML = `
-                                <span>Failed: ${errorMessage}</span>
+                                <span>Failed: ${error.message || 'Unknown error'}</span>
                                 <i class="uil uil-times status-icon status-failed"></i>
                             `;
                         }
 
-                        alert('Error sending message: ' + errorMessage);
+                        alert('Error sending message: ' + (error.message || 'Unknown error'));
                     }
                 }
 
