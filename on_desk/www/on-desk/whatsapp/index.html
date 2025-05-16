@@ -940,22 +940,61 @@
 
                 // Use frappe.require to load any additional dependencies
                 if (typeof frappe.require === 'function') {
-                    frappe.require([
-                        "/assets/frappe/js/frappe/request.js"
-                    ], function () {
-                        console.log('Additional dependencies loaded');
+                    console.log('Using frappe.require to load additional dependencies');
+                    try {
+                        frappe.require([
+                            "/assets/frappe/js/frappe/request.js"
+                        ], function () {
+                            console.log('Additional dependencies loaded successfully');
+                            initializeWhatsApp();
+                        });
+                    } catch (e) {
+                        console.error('Error using frappe.require:', e);
+                        console.log('Falling back to direct script loading');
+                        loadScriptDirectly('/assets/frappe/js/frappe/request.js', function () {
+                            console.log('Additional dependencies loaded via direct method');
+                            initializeWhatsApp();
+                        });
+                    }
+                } else {
+                    console.log('frappe.require not available, loading dependencies directly');
+                    loadScriptDirectly('/assets/frappe/js/frappe/request.js', function () {
+                        console.log('Additional dependencies loaded via direct method');
                         initializeWhatsApp();
                     });
-                } else {
-                    console.log('frappe.require not available, initializing without additional dependencies');
-                    initializeWhatsApp();
+                }
+
+                // Helper function to load scripts directly
+                function loadScriptDirectly(src, callback) {
+                    var script = document.createElement('script');
+                    script.src = src;
+                    script.onload = callback;
+                    script.onerror = function () {
+                        console.error('Failed to load script:', src);
+                        // Continue anyway
+                        callback();
+                    };
+                    document.head.appendChild(script);
                 }
             }, { once: true });
 
-            // Check if frappe is already loaded
-            if (typeof frappe !== 'undefined' && frappe.call) {
-                console.log('Frappe already loaded, dispatching event');
+            // Check if frappe is already fully loaded with all required methods
+            if (typeof frappe !== 'undefined' && typeof frappe.call === 'function' && typeof frappe.require === 'function') {
+                console.log('Frappe already fully loaded, dispatching event');
                 document.dispatchEvent(new Event('frappe_loaded'));
+            } else if (typeof frappe !== 'undefined') {
+                console.log('Frappe object exists but may not be fully initialized, waiting for complete load');
+                // Wait a short time to allow frappe to fully initialize
+                setTimeout(function () {
+                    if (typeof frappe.require === 'function') {
+                        console.log('Frappe now fully initialized, dispatching event');
+                        document.dispatchEvent(new Event('frappe_loaded'));
+                    } else {
+                        console.log('Frappe still not fully initialized, proceeding with fallbacks');
+                        // Proceed anyway with our fallbacks
+                        document.dispatchEvent(new Event('frappe_loaded'));
+                    }
+                }, 500);
             }
 
             // Function to initialize WhatsApp functionality

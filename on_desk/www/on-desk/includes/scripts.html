@@ -5,33 +5,78 @@
 <script>
     // Load Frappe in a proper sequence
     document.addEventListener('DOMContentLoaded', function () {
-        // First check if frappe is already defined
-        if (typeof frappe === 'undefined') {
-            console.log('Loading Frappe core libraries...');
+        // Function to check if frappe is fully initialized
+        function isFrappeFullyInitialized() {
+            return typeof frappe !== 'undefined' &&
+                typeof frappe.call === 'function' &&
+                typeof frappe.require === 'function';
+        }
 
-            // Create a script element to load provide.js first
-            var provideScript = document.createElement('script');
-            provideScript.src = '/assets/frappe/js/frappe/provide.js';
-            provideScript.onload = function () {
-                console.log('Frappe provide.js loaded');
-
-                // Now load the main frappe-web bundle
-                var webScript = document.createElement('script');
-                webScript.src = '/assets/js/frappe-web.min.js';
-                webScript.onload = function () {
-                    console.log('Frappe web bundle loaded');
-
-                    // Dispatch an event to notify that frappe is loaded
-                    document.dispatchEvent(new Event('frappe_loaded'));
-                };
-                document.head.appendChild(webScript);
-            };
-            document.head.appendChild(provideScript);
-        } else {
-            console.log('Frappe is already defined');
-            // Dispatch the event anyway
+        // Function to dispatch the frappe_loaded event
+        function dispatchFrappeLoaded() {
+            console.log('Dispatching frappe_loaded event');
             document.dispatchEvent(new Event('frappe_loaded'));
         }
+
+        // First check if frappe is already fully defined
+        if (isFrappeFullyInitialized()) {
+            console.log('Frappe is already fully initialized');
+            dispatchFrappeLoaded();
+            return;
+        }
+
+        // If frappe exists but is not fully initialized
+        if (typeof frappe !== 'undefined') {
+            console.log('Frappe exists but may not be fully initialized, waiting...');
+
+            // Try loading frappe-web.min.js to ensure all methods are available
+            var webScript = document.createElement('script');
+            webScript.src = '/assets/js/frappe-web.min.js';
+            webScript.onload = function () {
+                console.log('Frappe web bundle loaded');
+
+                // Check again after a short delay to allow initialization
+                setTimeout(function () {
+                    if (isFrappeFullyInitialized()) {
+                        console.log('Frappe is now fully initialized');
+                    } else {
+                        console.log('Frappe still not fully initialized after loading web bundle');
+                    }
+                    dispatchFrappeLoaded();
+                }, 300);
+            };
+            document.head.appendChild(webScript);
+            return;
+        }
+
+        // If frappe doesn't exist at all
+        console.log('Loading Frappe core libraries from scratch...');
+
+        // Create a script element to load provide.js first
+        var provideScript = document.createElement('script');
+        provideScript.src = '/assets/frappe/js/frappe/provide.js';
+        provideScript.onload = function () {
+            console.log('Frappe provide.js loaded');
+
+            // Now load the main frappe-web bundle
+            var webScript = document.createElement('script');
+            webScript.src = '/assets/js/frappe-web.min.js';
+            webScript.onload = function () {
+                console.log('Frappe web bundle loaded');
+
+                // Check if frappe is fully initialized after a short delay
+                setTimeout(function () {
+                    if (isFrappeFullyInitialized()) {
+                        console.log('Frappe is fully initialized after loading');
+                    } else {
+                        console.log('Frappe not fully initialized after loading, proceeding anyway');
+                    }
+                    dispatchFrappeLoaded();
+                }, 300);
+            };
+            document.head.appendChild(webScript);
+        };
+        document.head.appendChild(provideScript);
     });
 
     // Define a temporary frappe object for use before the real one loads
