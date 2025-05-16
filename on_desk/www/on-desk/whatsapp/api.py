@@ -105,7 +105,8 @@ def get_conversation_messages(phone_number):
         return []
 
     frappe.log_error(
-        f"Getting messages for phone number: {phone_number}", "WhatsApp Debug"
+        message=f"Getting messages for phone number: {phone_number}",
+        title="WhatsApp Debug",
     )
 
     # Get messages for this phone number (both incoming and outgoing)
@@ -121,7 +122,7 @@ def get_conversation_messages(phone_number):
         as_dict=1,
     )
 
-    frappe.log_error(f"Found {len(messages)} messages", "WhatsApp Debug")
+    frappe.log_error(message=f"Found {len(messages)} messages", title="WhatsApp Debug")
 
     formatted_messages = []
 
@@ -147,22 +148,25 @@ def send_message(phone_number, message):
 
     # Log the function call with all parameters
     frappe.log_error(
-        f"send_message called with: phone_number={phone_number}, message={message}",
-        "WhatsApp Debug",
+        message=f"send_message called with: phone_number={phone_number}, message={message}",
+        title="WhatsApp Debug",
     )
 
     # Check if parameters are valid
     if not phone_number or not message:
         error_msg = "Missing phone number or message"
-        frappe.log_error(error_msg, "WhatsApp Debug")
+        frappe.log_error(message=error_msg, title="WhatsApp Debug")
         return {"success": False, "error": error_msg}
 
-    frappe.log_error(f"Sending message to {phone_number}: {message}", "WhatsApp Debug")
+    frappe.log_error(
+        message=f"Sending message to {phone_number}: {message}", title="WhatsApp Debug"
+    )
 
     try:
         # Check if WhatsApp integration is configured
         frappe.log_error(
-            "Checking WhatsApp integration configuration", "WhatsApp Debug"
+            message="Checking WhatsApp integration configuration",
+            title="WhatsApp Debug",
         )
 
         # Get WhatsApp integration settings
@@ -170,12 +174,12 @@ def send_message(phone_number, message):
 
         if not settings:
             error_msg = "WhatsApp integration not found"
-            frappe.log_error(error_msg, "WhatsApp Debug")
+            frappe.log_error(message=error_msg, title="WhatsApp Debug")
             return {"success": False, "error": error_msg}
 
         if not settings.enabled:
             error_msg = "WhatsApp integration is not enabled"
-            frappe.log_error(error_msg, "WhatsApp Debug")
+            frappe.log_error(message=error_msg, title="WhatsApp Debug")
             return {"success": False, "error": error_msg}
 
         # Log all settings (except sensitive data)
@@ -189,25 +193,31 @@ def send_message(phone_number, message):
             "webhook_url": settings.webhook_url,
         }
         frappe.log_error(
-            f"WhatsApp settings: {json.dumps(settings_info)}", "WhatsApp Debug"
+            message=f"WhatsApp settings: {json.dumps(settings_info)}",
+            title="WhatsApp Debug",
         )
 
         # Send the message
-        frappe.log_error("Calling settings.send_message", "WhatsApp Debug")
+        frappe.log_error(
+            message="Calling settings.send_message", title="WhatsApp Debug"
+        )
         response = settings.send_message(phone_number, message)
         frappe.log_error(
-            f"Send message response: {json.dumps(response) if response else 'None'}",
-            "WhatsApp Debug",
+            message=f"Send message response: {json.dumps(response) if response else 'None'}",
+            title="WhatsApp Debug",
         )
 
         if response:
             message_id = response.get("messages", [{}])[0].get("id", "")
-            frappe.log_error(f"Message sent with ID: {message_id}", "WhatsApp Debug")
+            frappe.log_error(
+                message=f"Message sent with ID: {message_id}", title="WhatsApp Debug"
+            )
 
             # Create a record in OD Social Media Message
             try:
                 frappe.log_error(
-                    "Creating message record in database", "WhatsApp Debug"
+                    message="Creating message record in database",
+                    title="WhatsApp Debug",
                 )
                 msg = frappe.new_doc("OD Social Media Message")
                 msg.channel = "WhatsApp"
@@ -220,25 +230,26 @@ def send_message(phone_number, message):
                 msg.insert(ignore_permissions=True)
                 frappe.db.commit()
                 frappe.log_error(
-                    f"Created message record: {msg.name}", "WhatsApp Debug"
+                    message=f"Created message record: {msg.name}",
+                    title="WhatsApp Debug",
                 )
             except Exception as e:
                 error_trace = traceback.format_exc()
                 frappe.log_error(
-                    f"Failed to create message record: {str(e)}\n\nTraceback:\n{error_trace}",
-                    "WhatsApp Debug",
+                    message=f"Failed to create message record: {str(e)}\n\nTraceback:\n{error_trace}",
+                    title="WhatsApp Debug",
                 )
 
             return {"success": True, "message_id": message_id}
         else:
             error_msg = "Failed to send message: No response from WhatsApp API"
-            frappe.log_error(error_msg, "WhatsApp Debug")
+            frappe.log_error(message=error_msg, title="WhatsApp Debug")
             return {"success": False, "error": error_msg}
     except Exception as e:
         error_trace = traceback.format_exc()
         frappe.log_error(
-            f"WhatsApp Send Message Error: {str(e)}\n\nTraceback:\n{error_trace}",
-            "WhatsApp API Error",
+            message=f"WhatsApp Send Message Error: {str(e)}\n\nTraceback:\n{error_trace}",
+            title="WhatsApp API Error",
         )
         return {"success": False, "error": str(e)}
 
@@ -277,7 +288,8 @@ def get_message_statuses(message_ids):
             message.status = message_doc.status
         except Exception as e:
             frappe.log_error(
-                f"WhatsApp Message Status Error: {str(e)}", "WhatsApp API Error"
+                message=f"WhatsApp Message Status Error: {str(e)}",
+                title="WhatsApp API Error",
             )
 
     return messages
@@ -286,7 +298,9 @@ def get_message_statuses(message_ids):
 @frappe.whitelist()
 def test_api():
     """Simple test function to check if the API is reachable"""
-    frappe.log_error("test_api function was called successfully", "WhatsApp Debug")
+    frappe.log_error(
+        message="test_api function was called successfully", title="WhatsApp Debug"
+    )
     return {"success": True, "message": "API is reachable"}
 
 
@@ -323,6 +337,7 @@ def create_conversation(phone_number, contact_name):
         return {"success": True, "contact": contact.name}
     except Exception as e:
         frappe.log_error(
-            f"WhatsApp Create Conversation Error: {str(e)}", "WhatsApp API Error"
+            message=f"WhatsApp Create Conversation Error: {str(e)}",
+            title="WhatsApp API Error",
         )
         return {"success": False, "error": str(e)}
