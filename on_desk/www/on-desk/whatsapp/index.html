@@ -1541,9 +1541,81 @@
                     setTimeout(ensureEventHandlers, 100);
                 }
 
-                // Function to start polling for message status updates
+                // Function to start message status updates
                 function startMessageStatusUpdates() {
-                    // Implementation omitted for brevity
+                    console.log('Starting message status updates');
+
+                    // Get all outgoing messages in the current conversation
+                    const outgoingMessages = document.querySelectorAll('.message.message-outgoing');
+                    if (!outgoingMessages.length) {
+                        console.log('No outgoing messages to update status for');
+                        return;
+                    }
+
+                    // Collect message IDs
+                    const messageIds = [];
+                    outgoingMessages.forEach(msg => {
+                        const messageId = msg.dataset.messageId;
+                        if (messageId && !messageId.startsWith('temp-')) {
+                            messageIds.push(messageId);
+                        }
+                    });
+
+                    if (!messageIds.length) {
+                        console.log('No valid message IDs to update status for');
+                        return;
+                    }
+
+                    console.log('Fetching initial status for message IDs:', messageIds);
+
+                    // Make a single API call to get the current status of all messages
+                    if (typeof frappe !== 'undefined' && typeof frappe.call === 'function') {
+                        frappe.call({
+                            method: 'on_desk.www.on-desk.whatsapp.api.get_message_statuses',
+                            args: {
+                                message_ids: messageIds
+                            },
+                            callback: function (response) {
+                                if (response.message) {
+                                    console.log('Initial message statuses:', response.message);
+
+                                    // Update the status of each message
+                                    response.message.forEach(msg => {
+                                        const messageEl = document.querySelector(`[data-message-id="${msg.message_id}"]`);
+                                        if (messageEl) {
+                                            const statusEl = messageEl.querySelector('.message-status');
+                                            if (statusEl) {
+                                                let statusIcon = '';
+                                                let statusClass = '';
+
+                                                if (msg.status === 'Sent') {
+                                                    statusIcon = 'uil-check';
+                                                    statusClass = 'status-sent';
+                                                } else if (msg.status === 'Delivered') {
+                                                    statusIcon = 'uil-check-double';
+                                                    statusClass = 'status-delivered';
+                                                } else if (msg.status === 'Read') {
+                                                    statusIcon = 'uil-check-double';
+                                                    statusClass = 'status-read';
+                                                } else if (msg.status === 'Failed') {
+                                                    statusIcon = 'uil-times';
+                                                    statusClass = 'status-failed';
+                                                }
+
+                                                statusEl.innerHTML = `
+                                                    <span>${msg.status}</span>
+                                                    <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
+                                                `;
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+
+                    // Note: Further status updates will come through real-time events
+                    console.log('Real-time status updates are now active');
                 }
 
                 // Function to refresh conversations list
@@ -1804,6 +1876,96 @@
 
                 // Initial load of conversations
                 refreshConversations();
+
+                // Set up real-time event listeners
+                setupRealtimeEvents();
+
+                // Function to set up real-time event listeners
+                function setupRealtimeEvents() {
+                    console.log('Setting up real-time event listeners...');
+
+                    // Check if frappe.realtime is available
+                    if (typeof frappe === 'undefined' || !frappe.realtime) {
+                        console.error('frappe.realtime is not available. Real-time updates will not work.');
+                        return;
+                    }
+
+                    // Listen for incoming WhatsApp messages
+                    frappe.realtime.on('whatsapp_message_received', function (data) {
+                        console.log('Real-time event received: whatsapp_message_received', data);
+
+                        // If this message is for the active conversation, refresh the messages
+                        if (activeConversation && data.from_number === activeConversation.phone) {
+                            console.log('Refreshing active conversation with new message');
+                            loadConversation(activeConversation.phone, activeConversation.name);
+                        }
+
+                        // Refresh the conversations list to show the new message
+                        refreshConversations();
+
+                        // Show notification if the message is not for the active conversation
+                        if (!activeConversation || data.from_number !== activeConversation.phone) {
+                            // Create a notification
+                            if ("Notification" in window && Notification.permission === "granted") {
+                                const notification = new Notification("New WhatsApp Message", {
+                                    body: `From: ${data.from_number}\nMessage: ${data.message}`,
+                                    icon: "/assets/on_desk/img/icons/whatsapp-icon.png"
+                                });
+
+                                // Open the conversation when notification is clicked
+                                notification.onclick = function () {
+                                    window.focus();
+                                    // Find the conversation item and click it
+                                    const conversationItem = document.querySelector(`.conversation-item[data-phone="${data.from_number}"]`);
+                                    if (conversationItem) {
+                                        conversationItem.click();
+                                    }
+                                };
+                            }
+                        }
+                    });
+
+                    // Listen for WhatsApp message status updates
+                    frappe.realtime.on('whatsapp_message_status_update', function (data) {
+                        console.log('Real-time event received: whatsapp_message_status_update', data);
+
+                        // Find the message element by message_id and update its status
+                        const messageEl = document.querySelector(`[data-message-id="${data.message_id}"]`);
+                        if (messageEl) {
+                            const statusEl = messageEl.querySelector('.message-status');
+                            if (statusEl) {
+                                let statusIcon = '';
+                                let statusClass = '';
+
+                                if (data.status === 'Sent') {
+                                    statusIcon = 'uil-check';
+                                    statusClass = 'status-sent';
+                                } else if (data.status === 'Delivered') {
+                                    statusIcon = 'uil-check-double';
+                                    statusClass = 'status-delivered';
+                                } else if (data.status === 'Read') {
+                                    statusIcon = 'uil-check-double';
+                                    statusClass = 'status-read';
+                                } else if (data.status === 'Failed') {
+                                    statusIcon = 'uil-times';
+                                    statusClass = 'status-failed';
+                                }
+
+                                statusEl.innerHTML = `
+                                    <span>${data.status}</span>
+                                    <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
+                                `;
+                            }
+                        }
+                    });
+
+                    // Request notification permission if not already granted
+                    if ("Notification" in window && Notification.permission !== "granted") {
+                        Notification.requestPermission();
+                    }
+
+                    console.log('Real-time event listeners set up successfully');
+                }
             }
         });
     </script>
