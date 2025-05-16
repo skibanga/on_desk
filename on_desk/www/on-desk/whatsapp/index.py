@@ -79,6 +79,9 @@ def get_context(context):
         else None
     )
 
+    # Add CSRF token to context
+    context.csrf_token = frappe.session.csrf_token
+
     return context
 
 
