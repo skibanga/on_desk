@@ -572,18 +572,67 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Set up real-time updates using Frappe's realtime events
-    frappe.realtime.on('whatsapp_message_received', function (data) {
-        // If this message is for the active conversation, refresh the messages
-        if (activeConversation && data.from_number === activeConversation.phone) {
-            loadConversation(activeConversation.phone, activeConversation.name);
+    // Set up real-time updates using our custom realtime client
+    function setupRealtimeEvents() {
+        console.log("Setting up realtime events for WhatsApp...");
+
+        // Try to use our custom realtime client first
+        if (typeof on_desk !== 'undefined' && on_desk.realtime) {
+            console.log("Using on_desk.realtime client for WhatsApp events");
+
+            // Listen for incoming messages
+            on_desk.realtime.on('whatsapp_message_received', function (data) {
+                console.log("WhatsApp message received via on_desk.realtime:", data);
+
+                // If this message is for the active conversation, refresh the messages
+                if (activeConversation && data.from_number === activeConversation.phone) {
+                    loadConversation(activeConversation.phone, activeConversation.name);
+                }
+
+                // Refresh the conversations list
+                refreshConversations();
+            });
+
+            // Listen for message status updates
+            on_desk.realtime.on('whatsapp_message_status_update', function (data) {
+                console.log("WhatsApp message status update via on_desk.realtime:", data);
+
+                // If this message is in the current view, update its status
+                updateMessageStatus(data);
+            });
         }
+        // Fall back to frappe.realtime for backward compatibility
+        else if (typeof frappe !== 'undefined' && frappe.realtime) {
+            console.log("Falling back to frappe.realtime for WhatsApp events");
 
-        // Refresh the conversations list
-        refreshConversations();
-    });
+            // Listen for incoming messages
+            frappe.realtime.on('whatsapp_message_received', function (data) {
+                console.log("WhatsApp message received via frappe.realtime:", data);
 
-    frappe.realtime.on('whatsapp_message_status_update', function (data) {
+                // If this message is for the active conversation, refresh the messages
+                if (activeConversation && data.from_number === activeConversation.phone) {
+                    loadConversation(activeConversation.phone, activeConversation.name);
+                }
+
+                // Refresh the conversations list
+                refreshConversations();
+            });
+
+            // Listen for message status updates
+            frappe.realtime.on('whatsapp_message_status_update', function (data) {
+                console.log("WhatsApp message status update via frappe.realtime:", data);
+
+                // If this message is in the current view, update its status
+                updateMessageStatus(data);
+            });
+        }
+        else {
+            console.error("No realtime client available for WhatsApp events");
+        }
+    }
+
+    // Helper function to update message status in the UI
+    function updateMessageStatus(data) {
         // If this message is in the current view, update its status
         const messageEl = document.querySelector(`[data-message-id="${data.message_id}"]`);
         if (messageEl) {
@@ -612,7 +661,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 `;
             }
         }
-    });
+    }
+
+    // Set up realtime events
+    setupRealtimeEvents();
 
     // Initialize the UI
     initializeUI();

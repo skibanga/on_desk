@@ -25,6 +25,9 @@ web_include_js = [
     "/assets/on_desk/vendors/bootstrap/bootstrap.min.js",
     "/assets/on_desk/vendors/fontawesome/all.min.js",
     "/assets/on_desk/js/phoenix.js",
+    "/assets/frappe/js/lib/socket.io.min.js",
+    "/assets/on_desk/js/on_desk_socket.js",
+    "/assets/on_desk/js/whatsapp_test.js",
 ]
 
 # include custom scss in every website theme (without file extension ".scss")
