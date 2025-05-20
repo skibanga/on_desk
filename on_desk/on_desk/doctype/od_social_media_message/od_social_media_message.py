@@ -45,9 +45,10 @@ class ODSocialMediaMessage(Document):
                 "Authorization": f"Bearer {settings.get_password('api_key')}",
             }
 
-            # Make the API request
-            url = f"{settings.api_endpoint}/{settings.phone_number_id}/messages/{self.message_id}"
-            response = requests.get(url, headers=headers)
+            # Make the API request - use query parameter instead of path for message ID
+            url = f"{settings.api_endpoint}/{settings.phone_number_id}/messages"
+            params = {"id": self.message_id}
+            response = requests.get(url, headers=headers, params=params)
             response_data = response.json()
 
             if response.status_code == 200:
@@ -79,15 +80,25 @@ class ODSocialMediaMessage(Document):
 
                 return response_data
             else:
+                # Truncate the error message to avoid "Value too big" errors
+                error_msg = str(response_data)
+                if len(error_msg) > 1000:
+                    error_msg = error_msg[:997] + "..."
+
                 frappe.log_error(
-                    f"WhatsApp Message Status API Error: {response_data}",
-                    "WhatsApp Message Error",
+                    f"WhatsApp Message Status API Error: {error_msg}",
+                    "WhatsApp API Error",
                 )
                 return None
         except Exception as e:
+            # Truncate the error message to avoid "Value too big" errors
+            error_msg = str(e)
+            if len(error_msg) > 1000:
+                error_msg = error_msg[:997] + "..."
+
             frappe.log_error(
-                f"WhatsApp Message Status API Exception: {str(e)}",
-                "WhatsApp Message Error",
+                f"WhatsApp Message Status API Exception: {error_msg}",
+                "WhatsApp API Error",
             )
             return None
 
@@ -318,9 +329,10 @@ def update_message_statuses():
     # Process messages in batches
     for message_data in messages:
         try:
-            # Make the API request
-            url = f"{settings.api_endpoint}/{settings.phone_number_id}/messages/{message_data.message_id}"
-            response = requests.get(url, headers=headers)
+            # Make the API request - use query parameter instead of path for message ID
+            url = f"{settings.api_endpoint}/{settings.phone_number_id}/messages"
+            params = {"id": message_data.message_id}
+            response = requests.get(url, headers=headers, params=params)
 
             if response.status_code == 200:
                 response_data = response.json()
@@ -355,12 +367,22 @@ def update_message_statuses():
                             },
                         )
             else:
+                # Truncate the error message to avoid "Value too big" errors
+                error_msg = str(response.text)
+                if len(error_msg) > 1000:
+                    error_msg = error_msg[:997] + "..."
+
                 frappe.log_error(
-                    f"WhatsApp Message Status API Error for message {message_data.message_id}: {response.text}",
-                    "WhatsApp Message Status Error",
+                    f"WhatsApp Message Status API Error for message {message_data.message_id}: {error_msg}",
+                    "WhatsApp API Error",
                 )
         except Exception as e:
+            # Truncate the error message to avoid "Value too big" errors
+            error_msg = str(e)
+            if len(error_msg) > 1000:
+                error_msg = error_msg[:997] + "..."
+
             frappe.log_error(
-                f"Error updating WhatsApp message status for message {message_data.message_id}: {str(e)}",
-                "WhatsApp Message Status Error",
+                f"Error updating WhatsApp message status for message {message_data.message_id}: {error_msg}",
+                "WhatsApp API Error",
             )
