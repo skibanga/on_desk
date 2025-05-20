@@ -590,16 +590,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // Listen for incoming messages
+            // Listen for incoming and outgoing messages
             on_desk.realtime.on('whatsapp_message_received', function (data) {
                 console.log("WhatsApp message received via on_desk.realtime:", data);
 
-                // If this message is for the active conversation, refresh the messages
-                if (activeConversation && data.from_number === activeConversation.phone) {
+                // Check if this is an outgoing message for the active conversation
+                if (data.direction === "Outgoing" && activeConversation && data.to_number === activeConversation.phone) {
+                    console.log("Outgoing message for active conversation, refreshing...");
+                    loadConversation(activeConversation.phone, activeConversation.name);
+                }
+                // Check if this is an incoming message for the active conversation
+                else if (activeConversation && data.from_number === activeConversation.phone) {
+                    console.log("Incoming message for active conversation, refreshing...");
                     loadConversation(activeConversation.phone, activeConversation.name);
                 } else {
                     // If it's not for the active conversation, just refresh the conversations list
                     // This ensures new conversations appear without a page reload
+                    console.log("Message not for active conversation, refreshing list...");
                     refreshConversations();
                 }
             });
@@ -634,15 +641,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 frappe.realtime.init();
             }
 
-            // Listen for incoming messages
+            // Listen for incoming and outgoing messages
             frappe.realtime.on('whatsapp_message_received', function (data) {
                 console.log("WhatsApp message received via frappe.realtime:", data);
 
-                // If this message is for the active conversation, refresh the messages
-                if (activeConversation && data.from_number === activeConversation.phone) {
+                // Check if this is an outgoing message for the active conversation
+                if (data.direction === "Outgoing" && activeConversation && data.to_number === activeConversation.phone) {
+                    console.log("Outgoing message for active conversation, refreshing...");
+                    loadConversation(activeConversation.phone, activeConversation.name);
+                }
+                // Check if this is an incoming message for the active conversation
+                else if (activeConversation && data.from_number === activeConversation.phone) {
+                    console.log("Incoming message for active conversation, refreshing...");
                     loadConversation(activeConversation.phone, activeConversation.name);
                 } else {
                     // If it's not for the active conversation, just refresh the conversations list
+                    console.log("Message not for active conversation, refreshing list...");
                     refreshConversations();
                 }
             });
@@ -713,3 +727,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Start periodic socket connection check
     startSocketConnectionCheck();
+});

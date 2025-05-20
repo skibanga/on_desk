@@ -145,6 +145,7 @@ def send_message(phone_number, message):
     """Send a WhatsApp message to a specific phone number"""
     import traceback
     import json
+    import datetime
 
     # Log the function call with all parameters
     frappe.log_error(
@@ -229,8 +230,22 @@ def send_message(phone_number, message):
                 msg.status = "Sent"
                 msg.insert(ignore_permissions=True)
                 frappe.db.commit()
+
+                # Publish realtime event for outgoing message
+                frappe.publish_realtime(
+                    "whatsapp_message_received",
+                    {
+                        "message_id": message_id,
+                        "from_number": settings.phone_number,
+                        "to_number": phone_number,
+                        "message": message,
+                        "timestamp": int(datetime.datetime.now().timestamp()),
+                        "direction": "Outgoing"
+                    },
+                )
+
                 frappe.log_error(
-                    message=f"Created message record: {msg.name}",
+                    message=f"Created message record: {msg.name} and published realtime event",
                     title="WhatsApp Debug",
                 )
             except Exception as e:
