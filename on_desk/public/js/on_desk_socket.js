@@ -80,6 +80,21 @@ class OnDeskRealtimeClient {
 
             // Trigger any registered connect callbacks
             this.trigger("connect");
+
+            // Re-register for WhatsApp events on reconnection
+            this.register_whatsapp_events();
+        });
+
+        this.socket.on("reconnect", (attemptNumber) => {
+            console.log(`Socket.io reconnected after ${attemptNumber} attempts`);
+            this.connected = true;
+            this.reconnect_attempts = 0;
+
+            // Trigger reconnect event
+            this.trigger("reconnect", attemptNumber);
+
+            // Re-register for WhatsApp events on reconnection
+            this.register_whatsapp_events();
         });
 
         this.socket.on("disconnect", () => {
@@ -105,6 +120,17 @@ class OnDeskRealtimeClient {
             console.log("Socket.io pong received");
             this.trigger("pong");
         });
+
+        // Register WhatsApp events
+        this.register_whatsapp_events();
+    }
+
+    /**
+     * Register for WhatsApp specific events
+     * This is separated so it can be called on reconnection
+     */
+    register_whatsapp_events() {
+        console.log("Registering for WhatsApp events...");
 
         // WhatsApp specific events
         this.socket.on("whatsapp_message_received", (data) => {
@@ -227,6 +253,44 @@ class OnDeskRealtimeClient {
      */
     ping() {
         this.emit("ping");
+    }
+
+    /**
+     * Check if the socket is connected and reconnect if needed
+     * @returns {boolean} Whether the socket is connected
+     */
+    check_connection() {
+        console.log("Checking socket connection status...");
+
+        if (!this.socket) {
+            console.error("Socket not initialized. Initializing now...");
+            this.init();
+            return false;
+        }
+
+        if (!this.connected) {
+            console.log("Socket not connected. Reconnecting...");
+            this.connect();
+            return false;
+        }
+
+        console.log("Socket connection is active.");
+        return true;
+    }
+
+    /**
+     * Ensure WhatsApp events are registered
+     * This can be called from the WhatsApp interface to make sure events are registered
+     */
+    ensure_whatsapp_events() {
+        if (!this.check_connection()) {
+            // Connection was not active, wait for connect event to register
+            return false;
+        }
+
+        // Re-register for WhatsApp events
+        this.register_whatsapp_events();
+        return true;
     }
 }
 

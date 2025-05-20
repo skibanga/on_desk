@@ -580,6 +580,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (typeof on_desk !== 'undefined' && on_desk.realtime) {
             console.log("Using on_desk.realtime client for WhatsApp events");
 
+            // Make sure the socket is connected and events are registered
+            if (on_desk.realtime.ensure_whatsapp_events) {
+                on_desk.realtime.ensure_whatsapp_events();
+            } else {
+                // If the method doesn't exist, initialize the socket
+                if (on_desk.realtime.init) {
+                    on_desk.realtime.init();
+                }
+            }
+
             // Listen for incoming messages
             on_desk.realtime.on('whatsapp_message_received', function (data) {
                 console.log("WhatsApp message received via on_desk.realtime:", data);
@@ -587,10 +597,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 // If this message is for the active conversation, refresh the messages
                 if (activeConversation && data.from_number === activeConversation.phone) {
                     loadConversation(activeConversation.phone, activeConversation.name);
+                } else {
+                    // If it's not for the active conversation, just refresh the conversations list
+                    // This ensures new conversations appear without a page reload
+                    refreshConversations();
                 }
-
-                // Refresh the conversations list
-                refreshConversations();
             });
 
             // Listen for message status updates
@@ -600,10 +611,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 // If this message is in the current view, update its status
                 updateMessageStatus(data);
             });
+
+            // Set up reconnection handler
+            on_desk.realtime.on('reconnect', function () {
+                console.log("Socket reconnected, refreshing WhatsApp data...");
+
+                // Refresh conversations list
+                refreshConversations();
+
+                // Refresh active conversation if any
+                if (activeConversation) {
+                    loadConversation(activeConversation.phone, activeConversation.name);
+                }
+            });
         }
         // Fall back to frappe.realtime for backward compatibility
         else if (typeof frappe !== 'undefined' && frappe.realtime) {
             console.log("Falling back to frappe.realtime for WhatsApp events");
+
+            // Initialize frappe.realtime if needed
+            if (frappe.realtime.init && !frappe.realtime.socket) {
+                frappe.realtime.init();
+            }
 
             // Listen for incoming messages
             frappe.realtime.on('whatsapp_message_received', function (data) {
@@ -612,10 +641,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 // If this message is for the active conversation, refresh the messages
                 if (activeConversation && data.from_number === activeConversation.phone) {
                     loadConversation(activeConversation.phone, activeConversation.name);
+                } else {
+                    // If it's not for the active conversation, just refresh the conversations list
+                    refreshConversations();
                 }
-
-                // Refresh the conversations list
-                refreshConversations();
             });
 
             // Listen for message status updates
@@ -629,6 +658,16 @@ document.addEventListener('DOMContentLoaded', function () {
         else {
             console.error("No realtime client available for WhatsApp events");
         }
+    }
+
+    // Function to check socket connection periodically
+    function startSocketConnectionCheck() {
+        // Check connection every 30 seconds
+        setInterval(function () {
+            if (typeof on_desk !== 'undefined' && on_desk.realtime) {
+                on_desk.realtime.check_connection();
+            }
+        }, 30000);
     }
 
     // Helper function to update message status in the UI
@@ -671,3 +710,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initial load of conversations
     refreshConversations();
+
+    // Start periodic socket connection check
+    startSocketConnectionCheck();
