@@ -175,7 +175,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Start polling for status updates
                     startMessageStatusUpdates();
                 } else {
-                    // Show error
+                    // Get error details
+                    const errorData = response.message || {};
+                    const errorMessage = errorData.error ? errorData.error : 'Failed to send message';
+
+                    // Update the temporary message to show failure
                     const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
                     if (tempMessage) {
                         tempMessage.querySelector('.message-status').innerHTML = `
@@ -184,11 +188,41 @@ document.addEventListener('DOMContentLoaded', function () {
                         `;
                     }
 
-                    frappe.msgprint({
-                        title: __('Error'),
-                        indicator: 'red',
-                        message: __('Failed to send message. Please try again.')
-                    });
+                    // Check if this is an authentication error
+                    if (errorData.auth_error || (errorMessage && (errorMessage.includes('401 Unauthorized') || errorMessage.includes('Authentication Failed')))) {
+                        // Show a more detailed error for authentication issues
+                        const helpMessage = errorData.help || 'Please check your WhatsApp integration settings.';
+
+                        // Create a more detailed error message
+                        const detailedError = `
+                            <div class="auth-error-message">
+                                <p><strong>Authentication Error:</strong> ${errorMessage}</p>
+                                <p>${helpMessage}</p>
+                                <p>To fix this issue:</p>
+                                <ol>
+                                    <li>Go to WhatsApp Integration settings</li>
+                                    <li>Update your API key</li>
+                                    <li>Save the settings</li>
+                                </ol>
+                            </div>
+                        `;
+
+                        // Show a modal with the detailed error
+                        frappe.msgprint({
+                            title: 'WhatsApp Authentication Error',
+                            message: detailedError,
+                            indicator: 'red'
+                        });
+                    } else {
+                        // Show a regular error message
+                        frappe.msgprint({
+                            title: __('Error'),
+                            indicator: 'red',
+                            message: __('Failed to send message: ') + errorMessage
+                        });
+                    }
+
+                    console.error('WhatsApp send error:', errorData);
                 }
             }
         });

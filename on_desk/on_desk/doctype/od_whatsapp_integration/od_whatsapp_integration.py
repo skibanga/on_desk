@@ -161,6 +161,21 @@ class ODWhatsAppIntegration(Document):
                     )
 
                 return response_data
+            elif response.status_code == 401:
+                # Authentication error - provide more helpful message
+                error_msg = "WhatsApp API Authentication Failed (401 Unauthorized)"
+                help_msg = (
+                    "Your WhatsApp API key appears to be invalid or has expired. "
+                    "Please update your API key in the WhatsApp Integration settings."
+                )
+
+                frappe.log_error(
+                    message=f"{error_msg}\nResponse data: {json.dumps(response_data)}\n\nHelp: {help_msg}",
+                    title="WhatsApp Authentication Error",
+                )
+
+                # Return a more helpful error message
+                frappe.throw(f"{error_msg}<br><br>{help_msg}")
             else:
                 error_msg = f"WhatsApp API Error: Status code {response.status_code}"
                 frappe.log_error(

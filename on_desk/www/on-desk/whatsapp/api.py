@@ -260,7 +260,35 @@ def send_message(phone_number, message):
             error_msg = "Failed to send message: No response from WhatsApp API"
             frappe.log_error(message=error_msg, title="WhatsApp Debug")
             return {"success": False, "error": error_msg}
+    except frappe.exceptions.ValidationError as e:
+        # This is a validation error from the WhatsApp integration
+        error_trace = traceback.format_exc()
+        error_message = str(e)
+
+        # Check if this is an authentication error
+        if "401 Unauthorized" in error_message or "Authentication Failed" in error_message:
+            # This is an authentication error
+            frappe.log_error(
+                message=f"WhatsApp Authentication Error: {error_message}\n\nTraceback:\n{error_trace}",
+                title="WhatsApp Authentication Error",
+            )
+
+            # Return a more user-friendly error message
+            return {
+                "success": False,
+                "error": error_message,
+                "auth_error": True,
+                "help": "Please check your WhatsApp API key in the integration settings."
+            }
+        else:
+            # This is some other validation error
+            frappe.log_error(
+                message=f"WhatsApp Send Message Error: {error_message}\n\nTraceback:\n{error_trace}",
+                title="WhatsApp API Error",
+            )
+            return {"success": False, "error": error_message}
     except Exception as e:
+        # This is an unexpected error
         error_trace = traceback.format_exc()
         frappe.log_error(
             message=f"WhatsApp Send Message Error: {str(e)}\n\nTraceback:\n{error_trace}",
