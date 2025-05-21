@@ -21,7 +21,7 @@ class OnDeskRealtimeClient {
      * @param {number} port - The socket.io port
      * @param {boolean} lazy_connect - Whether to connect lazily
      */
-    init(port = 9000, lazy_connect = false) {
+    init(port = null, lazy_connect = false) {
         console.log("Initializing On Desk realtime client...");
 
         if (this.socket) {
@@ -29,12 +29,11 @@ class OnDeskRealtimeClient {
             return;
         }
 
-        // Get the host URL
-        const host = this.get_host(port);
-        console.log("Socket.io host:", host);
-
-        // Initialize socket with proper options
         try {
+            // Get the host URL
+            const host = this.get_host(port);
+            console.log("Socket.io host:", host);
+
             // Enable secure option when using HTTPS
             if (window.location.protocol == "https:") {
                 this.socket = io(host, {
@@ -43,7 +42,7 @@ class OnDeskRealtimeClient {
                     reconnectionAttempts: this.max_reconnect_attempts,
                     autoConnect: !lazy_connect,
                 });
-            } else if (window.location.protocol == "http:") {
+            } else {
                 this.socket = io(host, {
                     withCredentials: true,
                     reconnectionAttempts: this.max_reconnect_attempts,
@@ -72,6 +71,11 @@ class OnDeskRealtimeClient {
      * Set up socket event handlers
      */
     setup_socket_events() {
+        if (!this.socket) {
+            console.error("Cannot setup events: Socket not initialized");
+            return;
+        }
+
         // Connection events
         this.socket.on("connect", () => {
             console.log("Socket.io connected");
@@ -131,6 +135,11 @@ class OnDeskRealtimeClient {
      */
     register_whatsapp_events() {
         console.log("Registering for WhatsApp events...");
+
+        if (!this.socket) {
+            console.error("Cannot register WhatsApp events: Socket not initialized");
+            return;
+        }
 
         // WhatsApp specific events
         this.socket.on("whatsapp_message_received", (data) => {
@@ -232,13 +241,16 @@ class OnDeskRealtimeClient {
      * @param {number} port - The socket.io port
      * @returns {string} The host URL
      */
-    get_host(port = 9000) {
+    get_host(port = null) {
         let host = window.location.origin;
         let sitename = window.site_name || frappe.boot?.sitename || '';
 
-        if (window.dev_server) {
+        // Use the provided port, or get it from window.socketio_port, or use 9001 as fallback
+        port = port || window.socketio_port || 9001;
+
+        if (window.location.port) {
+            // If we're in a development environment with a custom port
             let parts = host.split(":");
-            port = window.socketio_port || port.toString() || "9000";
             if (parts.length > 2) {
                 host = parts[0] + ":" + parts[1];
             }
@@ -305,7 +317,9 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(function () {
         try {
             // Get the socket.io port from the window object
-            const port = window.socketio_port || 9000;
+            const port = window.socketio_port || 9001;
+
+            console.log("Using socket.io port:", port);
 
             // Initialize the realtime client
             on_desk.realtime.init(port);
