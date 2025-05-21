@@ -1,0 +1,269 @@
+{% extends "on_desk/www/on-desk/base.html" %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Real-time Event Tester</h5>
+                    <div>
+                        <a href="/app/od-test-event/new" class="btn btn-primary">
+                            <i class="uil uil-plus"></i> Create New Test Event
+                        </a>
+                        <button id="clear-events-btn" class="btn btn-outline-danger">
+                            <i class="uil uil-trash-alt"></i> Clear Events
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p><strong>How to test:</strong></p>
+                        <ol>
+                            <li>Create a new Test Event using the button above</li>
+                            <li>Fill in the details and save</li>
+                            <li>Watch for real-time updates below</li>
+                            <li>You can also edit or delete existing events to trigger updates</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6>Recent Events</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group" id="recent-events-list">
+                                        {% for event in recent_events %}
+                                        <a href="/app/od-test-event/{{ event.name }}" class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h5 class="mb-1">{{ event.title }}</h5>
+                                                <small>{{ event.creation_formatted }}</small>
+                                            </div>
+                                            <p class="mb-1">{{ event.description }}</p>
+                                            <div>
+                                                <span class="badge bg-{{ event.color }}">{{ event.event_type }}</span>
+                                                <span class="badge bg-secondary">{{ event.status }}</span>
+                                            </div>
+                                        </a>
+                                        {% endfor %}
+                                        
+                                        {% if not recent_events %}
+                                        <div class="text-center p-4">
+                                            <i class="uil uil-bell-slash text-muted" style="font-size: 3rem;"></i>
+                                            <p class="mt-2 text-muted">No events yet. Create one to get started!</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6>Real-time Event Log</h6>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="auto-scroll-toggle" checked>
+                                        <label class="form-check-label" for="auto-scroll-toggle">Auto-scroll</label>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="event-log" class="border rounded p-3" style="height: 400px; overflow-y: auto; font-family: monospace; background-color: #f8f9fa;">
+                                        <div class="text-center p-4">
+                                            <i class="uil uil-signal text-muted" style="font-size: 3rem;"></i>
+                                            <p class="mt-2 text-muted">Waiting for events...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const eventLog = document.getElementById('event-log');
+        const autoScrollToggle = document.getElementById('auto-scroll-toggle');
+        const clearEventsBtn = document.getElementById('clear-events-btn');
+        
+        // Function to add an event to the log
+        function addEventToLog(event) {
+            // Create a timestamp
+            const timestamp = new Date().toLocaleTimeString();
+            
+            // Create the log entry
+            const logEntry = document.createElement('div');
+            logEntry.classList.add('log-entry', 'mb-2', 'p-2', 'border-bottom');
+            
+            // Set background color based on event type
+            if (event.event_type === 'Info') {
+                logEntry.classList.add('bg-light-primary');
+            } else if (event.event_type === 'Warning') {
+                logEntry.classList.add('bg-light-warning');
+            } else if (event.event_type === 'Error') {
+                logEntry.classList.add('bg-light-danger');
+            } else if (event.event_type === 'Success') {
+                logEntry.classList.add('bg-light-success');
+            }
+            
+            // Create the log content
+            logEntry.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <strong>${event.title}</strong>
+                    <span class="text-muted">${timestamp}</span>
+                </div>
+                <div>${event.description || 'No description'}</div>
+                <div>
+                    <span class="badge bg-secondary">Action: ${event.action}</span>
+                    <span class="badge bg-info">Type: ${event.event_type}</span>
+                    <span class="badge bg-dark">Status: ${event.status}</span>
+                </div>
+            `;
+            
+            // Add to the log
+            eventLog.appendChild(logEntry);
+            
+            // Auto-scroll if enabled
+            if (autoScrollToggle.checked) {
+                eventLog.scrollTop = eventLog.scrollHeight;
+            }
+            
+            // If this is the first event, clear the "waiting" message
+            if (eventLog.querySelector('.text-center')) {
+                eventLog.innerHTML = '';
+                eventLog.appendChild(logEntry);
+            }
+        }
+        
+        // Clear events button
+        clearEventsBtn.addEventListener('click', function() {
+            eventLog.innerHTML = `
+                <div class="text-center p-4">
+                    <i class="uil uil-signal text-muted" style="font-size: 3rem;"></i>
+                    <p class="mt-2 text-muted">Waiting for events...</p>
+                </div>
+            `;
+        });
+        
+        // Set up real-time event listener
+        function setupRealtimeEvents() {
+            console.log("Setting up real-time event listeners...");
+            
+            // Try to use on_desk.realtime first
+            if (typeof on_desk !== 'undefined' && on_desk.realtime) {
+                console.log("Using on_desk.realtime for event listening");
+                
+                // Make sure the socket is connected
+                if (on_desk.realtime.ensure_whatsapp_events) {
+                    on_desk.realtime.ensure_whatsapp_events();
+                } else if (on_desk.realtime.init) {
+                    on_desk.realtime.init();
+                }
+                
+                // Listen for test events
+                on_desk.realtime.on('od_test_event', function(data) {
+                    console.log("Test event received via on_desk.realtime:", data);
+                    addEventToLog(data);
+                    
+                    // Refresh the recent events list
+                    refreshRecentEvents();
+                });
+            }
+            // Fall back to frappe.realtime
+            else if (typeof frappe !== 'undefined' && frappe.realtime) {
+                console.log("Using frappe.realtime for event listening");
+                
+                // Listen for test events
+                frappe.realtime.on('od_test_event', function(data) {
+                    console.log("Test event received via frappe.realtime:", data);
+                    addEventToLog(data);
+                    
+                    // Refresh the recent events list
+                    refreshRecentEvents();
+                });
+            }
+            else {
+                console.error("No realtime client available for event listening");
+                
+                // Show an error in the log
+                eventLog.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> No realtime client available. 
+                        Please make sure socket.io is properly configured.
+                    </div>
+                `;
+            }
+        }
+        
+        // Function to refresh the recent events list
+        function refreshRecentEvents() {
+            frappe.call({
+                method: 'frappe.client.get_list',
+                args: {
+                    doctype: 'OD Test Event',
+                    fields: ['name', 'title', 'description', 'event_type', 'status', 'creation'],
+                    order_by: 'creation desc',
+                    limit: 10
+                },
+                callback: function(response) {
+                    if (response.message) {
+                        const recentEventsList = document.getElementById('recent-events-list');
+                        recentEventsList.innerHTML = '';
+                        
+                        if (response.message.length === 0) {
+                            recentEventsList.innerHTML = `
+                                <div class="text-center p-4">
+                                    <i class="uil uil-bell-slash text-muted" style="font-size: 3rem;"></i>
+                                    <p class="mt-2 text-muted">No events yet. Create one to get started!</p>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        response.message.forEach(function(event) {
+                            // Format the creation date
+                            const creationDate = new Date(event.creation);
+                            const formattedDate = creationDate.toLocaleString();
+                            
+                            // Set color based on event type
+                            let color = 'secondary';
+                            if (event.event_type === 'Info') color = 'primary';
+                            if (event.event_type === 'Warning') color = 'warning';
+                            if (event.event_type === 'Error') color = 'danger';
+                            if (event.event_type === 'Success') color = 'success';
+                            
+                            const eventItem = document.createElement('a');
+                            eventItem.href = `/app/od-test-event/${event.name}`;
+                            eventItem.classList.add('list-group-item', 'list-group-item-action');
+                            eventItem.innerHTML = `
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">${event.title}</h5>
+                                    <small>${formattedDate}</small>
+                                </div>
+                                <p class="mb-1">${event.description || ''}</p>
+                                <div>
+                                    <span class="badge bg-${color}">${event.event_type}</span>
+                                    <span class="badge bg-secondary">${event.status}</span>
+                                </div>
+                            `;
+                            
+                            recentEventsList.appendChild(eventItem);
+                        });
+                    }
+                }
+            });
+        }
+        
+        // Set up real-time events
+        setupRealtimeEvents();
+    });
+</script>
+{% endblock %}

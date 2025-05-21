@@ -11,7 +11,10 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/on_desk/css/on_desk.css"
-app_include_js = "/assets/on_desk/js/hd_ticket_whatsapp.js"
+app_include_js = [
+    "/assets/on_desk/js/hd_ticket_whatsapp.js",
+    "/assets/on_desk/js/test_socket.js"
+]
 
 # include js, css files in header of web template
 web_include_css = [
@@ -27,6 +30,7 @@ web_include_js = [
     "/assets/on_desk/js/phoenix.js",
     "/assets/frappe/js/lib/socket.io.min.js",
     "/assets/on_desk/js/on_desk_socket.js",
+    "/assets/on_desk/js/test_socket.js",
     "/assets/on_desk/js/whatsapp_test.js",
 ]
 
