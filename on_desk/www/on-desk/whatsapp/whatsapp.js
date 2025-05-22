@@ -616,17 +616,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Make sure the socket is connected and events are registered
             if (on_desk.realtime.ensure_whatsapp_events) {
-                on_desk.realtime.ensure_whatsapp_events();
+                console.log("Calling ensure_whatsapp_events...");
+                const result = on_desk.realtime.ensure_whatsapp_events();
+                console.log("ensure_whatsapp_events result:", result);
 
                 // Debug the WhatsApp events
                 if (on_desk.realtime.debug_whatsapp) {
+                    console.log("Calling debug_whatsapp...");
                     on_desk.realtime.debug_whatsapp();
                 }
             } else {
+                console.warn("ensure_whatsapp_events method not found");
                 // If the method doesn't exist, initialize the socket
                 if (on_desk.realtime.init) {
+                    console.log("Initializing socket directly...");
                     on_desk.realtime.init();
+                } else {
+                    console.error("on_desk.realtime.init method not found");
                 }
+            }
+
+            // Add direct event listeners to the socket
+            if (on_desk.realtime.socket) {
+                console.log("Adding direct event listeners to socket...");
+                on_desk.realtime.socket.on("whatsapp_message_received", function (data) {
+                    console.log("Direct socket event: whatsapp_message_received", data);
+                    processWhatsAppMessage(data);
+                });
+
+                on_desk.realtime.socket.on("whatsapp_message_received_immediate", function (data) {
+                    console.log("Direct socket event: whatsapp_message_received_immediate", data);
+                    processWhatsAppMessage(data);
+                });
+            } else {
+                console.warn("on_desk.realtime.socket not available for direct event binding");
             }
 
             // Listen for incoming and outgoing messages
@@ -850,12 +873,15 @@ document.addEventListener('DOMContentLoaded', function () {
             indicator: 'blue'
         });
 
+        // Log the action
+        console.log("Triggering test WhatsApp event...");
+
         // Call the API to trigger a test event
         frappe.call({
             method: 'on_desk.on_desk.doctype.od_whatsapp_integration.api.test_whatsapp_event',
             args: {
                 phone_number: activeConversation ? activeConversation.phone : null,
-                message: 'Test message from WhatsApp interface'
+                message: 'Test message from WhatsApp interface at ' + new Date().toLocaleTimeString()
             },
             callback: function (response) {
                 if (response.message && response.message.success) {
@@ -865,12 +891,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
 
                     console.log('Test WhatsApp event triggered:', response.message.event_data);
+
+                    // Add a temporary message to the UI
+                    if (activeConversation) {
+                        const tempId = 'temp_' + Date.now();
+                        addMessageToUI({
+                            id: tempId,
+                            from: response.message.event_data.from_number,
+                            message: response.message.event_data.message,
+                            timestamp: response.message.event_data.timestamp,
+                            direction: 'Incoming',
+                            status: 'Delivered',
+                            is_test: true
+                        });
+
+                        // Scroll to the bottom
+                        scrollToBottom();
+                    }
                 } else {
                     frappe.show_alert({
                         message: __('Failed to trigger test WhatsApp event'),
                         indicator: 'red'
                     });
+                    console.error('Failed to trigger test WhatsApp event:', response);
                 }
+            },
+            error: function (xhr, status, error) {
+                frappe.show_alert({
+                    message: __('Error triggering test WhatsApp event: ') + error,
+                    indicator: 'red'
+                });
+                console.error('Error triggering test WhatsApp event:', xhr, status, error);
             }
         });
     }
@@ -882,19 +933,33 @@ document.addEventListener('DOMContentLoaded', function () {
         testButton.className = 'btn btn-sm btn-outline-primary ms-2';
         testButton.innerHTML = '<i class="uil uil-bolt"></i> Test Event';
         testButton.title = 'Trigger a test WhatsApp event';
+        testButton.id = 'test-whatsapp-event-btn';
         testButton.onclick = testWhatsAppEvent;
 
         // Find the header actions container
         const headerActions = document.querySelector('.whatsapp-header-actions');
         if (headerActions) {
+            console.log("Adding test button to header actions");
             headerActions.appendChild(testButton);
         } else {
             // If the header actions container doesn't exist, add it to the refresh button
             const refreshButton = document.querySelector('#refresh-conversations-btn');
             if (refreshButton && refreshButton.parentNode) {
+                console.log("Adding test button next to refresh button");
                 refreshButton.parentNode.appendChild(testButton);
+            } else {
+                // Last resort: add to the conversation header
+                const conversationHeader = document.querySelector('.conversation-header');
+                if (conversationHeader) {
+                    console.log("Adding test button to conversation header");
+                    conversationHeader.appendChild(testButton);
+                } else {
+                    console.warn("Could not find a suitable container for the test button");
+                }
             }
         }
+
+        console.log("Test button added:", testButton);
     }
 
     // Set up realtime events

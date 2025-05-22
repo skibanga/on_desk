@@ -231,21 +231,28 @@ def send_message(phone_number, message):
                 msg.insert(ignore_permissions=True)
                 frappe.db.commit()
 
-                # Publish realtime event for outgoing message
+                # Prepare event data
+                event_data = {
+                    "message_id": message_id,
+                    "from_number": settings.phone_number,
+                    "to_number": phone_number,
+                    "message": message,
+                    "timestamp": int(datetime.datetime.now().timestamp()),
+                    "direction": "Outgoing",
+                }
+
+                # Publish immediate realtime event for outgoing message
                 frappe.publish_realtime(
-                    "whatsapp_message_received",
-                    {
-                        "message_id": message_id,
-                        "from_number": settings.phone_number,
-                        "to_number": phone_number,
-                        "message": message,
-                        "timestamp": int(datetime.datetime.now().timestamp()),
-                        "direction": "Outgoing"
-                    },
+                    "whatsapp_message_received_immediate", event_data
+                )
+
+                # Publish regular realtime event for outgoing message
+                frappe.publish_realtime(
+                    "whatsapp_message_received", event_data, after_commit=True
                 )
 
                 frappe.log_error(
-                    message=f"Created message record: {msg.name} and published realtime event",
+                    message=f"Created message record: {msg.name} and published realtime events (immediate and after_commit)\nMessage ID: {message_id}\nTo: {phone_number}\nMessage: {message}",
                     title="WhatsApp Debug",
                 )
             except Exception as e:
@@ -266,7 +273,10 @@ def send_message(phone_number, message):
         error_message = str(e)
 
         # Check if this is an authentication error
-        if "401 Unauthorized" in error_message or "Authentication Failed" in error_message:
+        if (
+            "401 Unauthorized" in error_message
+            or "Authentication Failed" in error_message
+        ):
             # This is an authentication error
             frappe.log_error(
                 message=f"WhatsApp Authentication Error: {error_message}\n\nTraceback:\n{error_trace}",
@@ -278,7 +288,7 @@ def send_message(phone_number, message):
                 "success": False,
                 "error": error_message,
                 "auth_error": True,
-                "help": "Please check your WhatsApp API key in the integration settings."
+                "help": "Please check your WhatsApp API key in the integration settings.",
             }
         else:
             # This is some other validation error
