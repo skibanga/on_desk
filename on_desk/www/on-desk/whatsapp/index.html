@@ -946,10 +946,45 @@
 
         // Set CSRF token
         var csrfToken = "{{ csrf_token }}";
+
+        // Set socket.io port
+        var socketio_port = "{{ socketio_port }}";
+    </script>
+
+    <!-- Include lodash for window._ -->
+    <script src="/assets/frappe/js/lib/lodash.min.js"></script>
+
+    <!-- Fallback for lodash -->
+    <script>
+        if (typeof _ === 'undefined') {
+            console.log("Lodash not found, creating minimal implementation...");
+            window._ = {
+                merge: function () {
+                    var result = {};
+                    for (var i = 0; i < arguments.length; i++) {
+                        var obj = arguments[i];
+                        for (var key in obj) {
+                            if (obj.hasOwnProperty(key)) {
+                                result[key] = obj[key];
+                            }
+                        }
+                    }
+                    return result;
+                }
+            };
+        }
     </script>
 
     <!-- Include Socket.io -->
-    <script src="/assets/frappe/node_modules/socket.io/client-dist/socket.io.js"></script>
+    <script src="/assets/frappe/js/lib/socket.io.min.js"></script>
+
+    <!-- Fallback if the first path doesn't work -->
+    <script>
+        if (typeof io === 'undefined') {
+            console.log("Socket.io not found at primary path, trying fallback...");
+            document.write('<script src="/socket.io/socket.io.js"><\/script>');
+        }
+    </script>
 
     <!-- Inline socket implementation -->
     <script>
@@ -982,8 +1017,15 @@
                 }
 
                 // Get the socket.io port from the window object
-                this.socketio_port = window.socketio_port || 3000;
+                this.socketio_port = window.socketio_port || 9000;
                 this.socketio_host = window.location.hostname;
+
+                // Log the socket.io configuration
+                console.log("Socket.io configuration:", {
+                    port: this.socketio_port,
+                    host: this.socketio_host,
+                    window_port: window.socketio_port
+                });
 
                 // Get the site name from the URL
                 var sitename = window.location.pathname.split('/')[1] || '';
@@ -996,13 +1038,20 @@
                 console.log("Socket.io connecting to:", this.socketio_host, "port:", this.socketio_port, "namespace:", sitename);
 
                 try {
+                    // Determine the protocol (http or https)
+                    var protocol = window.location.protocol === 'https:' ? 'https://' : 'http://';
+                    var socketUrl = protocol + this.socketio_host + ':' + this.socketio_port + sitename;
+
+                    console.log("Connecting to socket.io at:", socketUrl);
+
                     // Connect to the socket.io server
-                    this.socket = io.connect(this.socketio_host + ':' + this.socketio_port + sitename, {
+                    this.socket = io(socketUrl, {
                         withCredentials: true,
                         reconnection: true,
                         reconnectionDelay: 1000,
                         reconnectionDelayMax: 5000,
-                        reconnectionAttempts: Infinity
+                        reconnectionAttempts: Infinity,
+                        transports: ['websocket', 'polling']
                     });
 
                     // Set up event handlers
