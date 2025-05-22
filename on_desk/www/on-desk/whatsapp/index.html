@@ -948,6 +948,9 @@
         var csrfToken = "{{ csrf_token }}";
     </script>
 
+    <!-- Include the frappe.provide function -->
+    <script src="/assets/on_desk/www/on-desk/whatsapp/provide.js"></script>
+
     <!-- Include the WhatsApp JavaScript file -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -961,20 +964,14 @@
 
             // Helper function to load dependencies
             function loadDependencies(callback) {
-                // Try to use frappe.require if available
-                if (typeof frappe !== 'undefined' &&
-                    typeof frappe.require === 'function' &&
-                    !frappe._isTemporaryFrappe) {
-                    try {
-                        frappe.require(["/assets/frappe/js/frappe/request.js"], callback);
-                    } catch (e) {
-                        // Fallback to direct loading
-                        loadScriptDirectly('/assets/frappe/js/frappe/request.js', callback);
-                    }
-                } else {
-                    // Direct loading
-                    loadScriptDirectly('/assets/frappe/js/frappe/request.js', callback);
+                // We're now using our custom provide.js file which is already loaded
+                // Just make sure frappe.provide is available
+                if (typeof frappe === 'undefined' || typeof frappe.provide !== 'function') {
+                    console.error('frappe.provide is not available. WhatsApp functionality may not work correctly.');
                 }
+
+                // Call the callback immediately since we don't need to load additional scripts
+                callback();
             }
 
             // Helper function to load scripts directly

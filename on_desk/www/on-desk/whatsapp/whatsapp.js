@@ -315,6 +315,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
         }
+
+        // Set up test API button
+        const testApiBtn = document.querySelector('#test-api-btn');
+        if (testApiBtn) {
+            console.log("Setting up test API button");
+            testApiBtn.addEventListener('click', function () {
+                testApiConnection();
+            });
+        } else {
+            console.warn("Test API button not found");
+        }
     }
 
     // Function to start polling for message status updates
@@ -962,6 +973,57 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log("Test button added:", testButton);
     }
 
+    // Function to test API connection
+    function testApiConnection() {
+        console.log("Testing API connection...");
+
+        // Use our custom frappe.call implementation
+        $.ajax({
+            url: '/api/method/on_desk.www.on-desk.whatsapp.api.test_connection',
+            type: 'POST',
+            dataType: 'json',
+            headers: {
+                'X-Frappe-CSRF-Token': frappe.csrf_token || ''
+            },
+            success: function (response) {
+                console.log("Test API response:", response);
+                if (response.message && response.message.success) {
+                    // Show success message
+                    if (frappe.show_alert) {
+                        frappe.show_alert({
+                            message: 'API connection successful!',
+                            indicator: 'green'
+                        });
+                    } else {
+                        alert('API connection successful!');
+                    }
+                } else {
+                    // Show error message
+                    if (frappe.show_alert) {
+                        frappe.show_alert({
+                            message: 'API connection failed',
+                            indicator: 'red'
+                        });
+                    } else {
+                        alert('API connection failed');
+                    }
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error("API test error:", xhr, status, error);
+                // Show error message
+                if (frappe.show_alert) {
+                    frappe.show_alert({
+                        message: 'API connection failed: ' + error,
+                        indicator: 'red'
+                    });
+                } else {
+                    alert('API connection failed: ' + error);
+                }
+            }
+        });
+    }
+
     // Set up realtime events
     setupRealtimeEvents();
 
@@ -974,6 +1036,80 @@ document.addEventListener('DOMContentLoaded', function () {
     // Start periodic socket connection check
     startSocketConnectionCheck();
 
+    // Helper function to add a message to the UI
+    function addMessageToUI(message) {
+        const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
+        if (!messagesContainer) {
+            console.error("Messages container not found");
+            return;
+        }
+
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
+        messageElement.dataset.messageId = message.id;
+
+        // Format timestamp
+        const timestamp = new Date(message.timestamp * 1000);
+        const timeString = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        let messageContent = `
+            ${message.message}
+            <div class="message-time">${timeString}</div>
+        `;
+
+        if (message.direction === 'Outgoing') {
+            let statusIcon = '';
+            let statusClass = '';
+
+            if (message.status === 'Sent') {
+                statusIcon = 'uil-check';
+                statusClass = 'status-sent';
+            } else if (message.status === 'Delivered') {
+                statusIcon = 'uil-check-double';
+                statusClass = 'status-delivered';
+            } else if (message.status === 'Read') {
+                statusIcon = 'uil-check-double';
+                statusClass = 'status-read';
+            } else if (message.status === 'Failed') {
+                statusIcon = 'uil-times';
+                statusClass = 'status-failed';
+            }
+
+            messageContent += `
+                <div class="message-status">
+                    <span>${message.status}</span>
+                    <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
+                </div>
+            `;
+        }
+
+        // Add test indicator if this is a test message
+        if (message.is_test) {
+            messageContent += `
+                <div class="test-indicator" style="font-size: 0.75rem; color: #999; margin-top: 0.25rem;">
+                    <i class="uil uil-bolt"></i> Test Message
+                </div>
+            `;
+        }
+
+        messageElement.innerHTML = messageContent;
+        messagesContainer.appendChild(messageElement);
+
+        return messageElement;
+    }
+
+    // Helper function to scroll to the bottom of the messages container
+    function scrollToBottom() {
+        const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
+
     // Add test button after a short delay to ensure the UI is loaded
     setTimeout(addTestButton, 1000);
+
+    // Test API connection
+    testApiConnection();
 });
