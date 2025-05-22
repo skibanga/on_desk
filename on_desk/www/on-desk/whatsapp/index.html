@@ -948,29 +948,57 @@
         var csrfToken = "{{ csrf_token }}";
     </script>
 
-    <!-- Include the frappe.provide function -->
-    <script src="/assets/on_desk/www/on-desk/whatsapp/provide.js"></script>
+    <!-- Include Socket.io -->
+    <script src="/assets/frappe/node_modules/socket.io/client-dist/socket.io.js"></script>
+
+    <!-- Include our custom socket implementation -->
+    <script src="/assets/on_desk/www/on-desk/whatsapp/socket.js"></script>
+
+    <!-- Include our test socket implementation -->
+    <script src="/assets/on_desk/www/on-desk/whatsapp/test_socket.js"></script>
 
     <!-- Include the WhatsApp JavaScript file -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Listen for the frappe_loaded event
-            document.addEventListener('frappe_loaded', function () {
-                // Load additional dependencies and initialize
-                loadDependencies(function () {
-                    initializeWhatsApp();
-                });
-            }, { once: true });
+            // Load additional dependencies and initialize
+            loadDependencies(function () {
+                initializeWhatsApp();
+            });
 
             // Helper function to load dependencies
             function loadDependencies(callback) {
-                // We're now using our custom provide.js file which is already loaded
-                // Just make sure frappe.provide is available
-                if (typeof frappe === 'undefined' || typeof frappe.provide !== 'function') {
-                    console.error('frappe.provide is not available. WhatsApp functionality may not work correctly.');
+                // Create minimal frappe object if needed
+                if (typeof frappe === 'undefined') {
+                    window.frappe = {};
                 }
 
-                // Call the callback immediately since we don't need to load additional scripts
+                // Add minimal implementation of frappe.call if needed
+                if (!frappe.call) {
+                    frappe.call = function (opts) {
+                        return $.ajax({
+                            url: '/api/method/' + opts.method,
+                            type: 'POST',
+                            data: opts.args || {},
+                            dataType: 'json',
+                            headers: {
+                                'X-Frappe-CSRF-Token': csrfToken
+                            },
+                            success: function (data) {
+                                if (opts.callback) {
+                                    opts.callback(data);
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                console.error("Request failed:", error);
+                                if (opts.error) {
+                                    opts.error(xhr);
+                                }
+                            }
+                        });
+                    };
+                }
+
+                // Call the callback immediately
                 callback();
             }
 
