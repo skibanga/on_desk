@@ -209,16 +209,53 @@ def process_status_update(status, value, settings):
         message_doc.status = new_status
         message_doc.save(ignore_permissions=True)
 
-        # Publish realtime event for status update
-        frappe.publish_realtime(
-            "whatsapp_message_status_update",
-            {
-                "message_id": message_id,
-                "status": new_status,
-                "from_number": message_doc.from_number,
-                "to_number": message_doc.to_number,
-            },
+        # Prepare event data
+        event_data = {
+            "message_id": message_id,
+            "status": new_status,
+            "from_number": message_doc.from_number,
+            "to_number": message_doc.to_number,
+            "timestamp": int(datetime.datetime.now().timestamp()),
+        }
+
+        # Log the event data
+        frappe.log_error(
+            message=f"Publishing WhatsApp status update event: {event_data}",
+            title="WhatsApp Status Update Event",
         )
+
+        # Publish immediate event (without after_commit)
+        try:
+            frappe.publish_realtime(
+                "whatsapp_message_status_update_immediate",
+                event_data,
+            )
+            frappe.log_error(
+                message=f"Published immediate WhatsApp status update for {message_id}",
+                title="WhatsApp Status Update Event",
+            )
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error publishing immediate WhatsApp status update: {str(e)}",
+                title="WhatsApp Status Update Error",
+            )
+
+        # Publish regular event (with after_commit)
+        try:
+            frappe.publish_realtime(
+                "whatsapp_message_status_update",
+                event_data,
+                after_commit=True,
+            )
+            frappe.log_error(
+                message=f"Queued WhatsApp status update for {message_id}",
+                title="WhatsApp Status Update Event",
+            )
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error publishing WhatsApp status update: {str(e)}",
+                title="WhatsApp Status Update Error",
+            )
 
         frappe.log_error(
             message=f"WhatsApp status update processed: {message_id} -> {new_status}",
@@ -251,16 +288,53 @@ def create_social_media_message(
 
     message_doc.insert(ignore_permissions=True)
 
-    # Publish realtime event for incoming message
-    frappe.publish_realtime(
-        "whatsapp_message_received",
-        {
-            "message_id": message_id,
-            "from_number": from_number,
-            "message": text,
-            "timestamp": timestamp,
-        },
+    # Prepare event data
+    event_data = {
+        "message_id": message_id,
+        "from_number": from_number,
+        "message": text,
+        "timestamp": timestamp,
+        "direction": "Incoming",
+    }
+
+    # Log the event data
+    frappe.log_error(
+        message=f"Publishing WhatsApp message event: {event_data}",
+        title="WhatsApp Realtime Event",
     )
+
+    # Publish immediate event (without after_commit)
+    try:
+        frappe.publish_realtime(
+            "whatsapp_message_received_immediate",
+            event_data,
+        )
+        frappe.log_error(
+            message=f"Published immediate WhatsApp message event for {message_id}",
+            title="WhatsApp Realtime Event",
+        )
+    except Exception as e:
+        frappe.log_error(
+            message=f"Error publishing immediate WhatsApp message event: {str(e)}",
+            title="WhatsApp Realtime Error",
+        )
+
+    # Publish regular event (with after_commit)
+    try:
+        frappe.publish_realtime(
+            "whatsapp_message_received",
+            event_data,
+            after_commit=True,
+        )
+        frappe.log_error(
+            message=f"Queued WhatsApp message event for {message_id}",
+            title="WhatsApp Realtime Event",
+        )
+    except Exception as e:
+        frappe.log_error(
+            message=f"Error publishing WhatsApp message event: {str(e)}",
+            title="WhatsApp Realtime Error",
+        )
 
     return message_doc.name
 
@@ -487,3 +561,167 @@ def handle_verification():
             title="WhatsApp Verification Error",
         )
         return "Error"
+
+
+@frappe.whitelist()
+def test_whatsapp_event(phone_number=None, message=None):
+    """
+    Test function to manually trigger a WhatsApp message event.
+    This is useful for testing the real-time functionality.
+    """
+    try:
+        # Use default values if not provided
+        phone_number = phone_number or "1234567890"
+        message = (
+            message
+            or f"Test message at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+
+        # Generate a unique message ID
+        message_id = f"test_{int(datetime.datetime.now().timestamp())}"
+
+        # Log the test event
+        frappe.log_error(
+            message=f"Triggering test WhatsApp event: {phone_number} - {message}",
+            title="WhatsApp Test Event",
+        )
+
+        # Prepare event data
+        event_data = {
+            "message_id": message_id,
+            "from_number": phone_number,
+            "message": message,
+            "timestamp": int(datetime.datetime.now().timestamp()),
+            "direction": "Incoming",
+            "is_test": True,
+        }
+
+        # Publish immediate event (without after_commit)
+        try:
+            frappe.publish_realtime(
+                "whatsapp_message_received_immediate",
+                event_data,
+            )
+            frappe.log_error(
+                message=f"Published immediate test WhatsApp event for {message_id}",
+                title="WhatsApp Test Event",
+            )
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error publishing immediate test WhatsApp event: {str(e)}",
+                title="WhatsApp Test Event Error",
+            )
+
+        # Publish regular event (with after_commit)
+        try:
+            frappe.publish_realtime(
+                "whatsapp_message_received",
+                event_data,
+                after_commit=True,
+            )
+            frappe.log_error(
+                message=f"Queued test WhatsApp event for {message_id}",
+                title="WhatsApp Test Event",
+            )
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error publishing test WhatsApp event: {str(e)}",
+                title="WhatsApp Test Event Error",
+            )
+
+        return {
+            "success": True,
+            "message": "Test WhatsApp event triggered successfully",
+            "event_data": event_data,
+        }
+    except Exception as e:
+        frappe.log_error(
+            message=f"Error triggering test WhatsApp event: {str(e)}",
+            title="WhatsApp Test Event Error",
+        )
+        return {
+            "success": False,
+            "message": f"Error triggering test WhatsApp event: {str(e)}",
+        }
+
+
+@frappe.whitelist()
+def test_whatsapp_event(phone_number=None, message=None):
+    """
+    Test function to manually trigger a WhatsApp message event.
+    This is useful for testing the real-time functionality.
+    """
+    try:
+        # Use default values if not provided
+        phone_number = phone_number or "1234567890"
+        message = (
+            message
+            or f"Test message at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+
+        # Generate a unique message ID
+        message_id = f"test_{int(datetime.datetime.now().timestamp())}"
+
+        # Log the test event
+        frappe.log_error(
+            message=f"Triggering test WhatsApp event: {phone_number} - {message}",
+            title="WhatsApp Test Event",
+        )
+
+        # Prepare event data
+        event_data = {
+            "message_id": message_id,
+            "from_number": phone_number,
+            "message": message,
+            "timestamp": int(datetime.datetime.now().timestamp()),
+            "direction": "Incoming",
+            "is_test": True,
+        }
+
+        # Publish immediate event (without after_commit)
+        try:
+            frappe.publish_realtime(
+                "whatsapp_message_received_immediate",
+                event_data,
+            )
+            frappe.log_error(
+                message=f"Published immediate test WhatsApp event for {message_id}",
+                title="WhatsApp Test Event",
+            )
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error publishing immediate test WhatsApp event: {str(e)}",
+                title="WhatsApp Test Event Error",
+            )
+
+        # Publish regular event (with after_commit)
+        try:
+            frappe.publish_realtime(
+                "whatsapp_message_received",
+                event_data,
+                after_commit=True,
+            )
+            frappe.log_error(
+                message=f"Queued test WhatsApp event for {message_id}",
+                title="WhatsApp Test Event",
+            )
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error publishing test WhatsApp event: {str(e)}",
+                title="WhatsApp Test Event Error",
+            )
+
+        return {
+            "success": True,
+            "message": "Test WhatsApp event triggered successfully",
+            "event_data": event_data,
+        }
+    except Exception as e:
+        frappe.log_error(
+            message=f"Error triggering test WhatsApp event: {str(e)}",
+            title="WhatsApp Test Event Error",
+        )
+        return {
+            "success": False,
+            "message": f"Error triggering test WhatsApp event: {str(e)}",
+        }

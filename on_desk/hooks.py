@@ -13,7 +13,7 @@ app_license = "mit"
 # app_include_css = "/assets/on_desk/css/on_desk.css"
 app_include_js = [
     "/assets/on_desk/js/hd_ticket_whatsapp.js",
-    "/assets/on_desk/js/test_socket.js"
+    "/assets/on_desk/js/test_socket.js",
 ]
 
 # include js, css files in header of web template
@@ -29,6 +29,7 @@ web_include_js = [
     "/assets/on_desk/vendors/fontawesome/all.min.js",
     "/assets/on_desk/js/phoenix.js",
     "/assets/frappe/js/lib/socket.io.min.js",
+    "/assets/on_desk/js/realtime_listener.js",
     "/assets/on_desk/js/on_desk_socket.js",
     "/assets/on_desk/js/test_socket.js",
     "/assets/on_desk/js/whatsapp_test.js",
@@ -59,7 +60,7 @@ web_include_js = [
 # ----------
 
 # application home page (will override Website Settings)
-home_page = "login"
+# home_page = "login"
 
 # website user home page (by Role)
 # role_home_page = {
@@ -74,20 +75,23 @@ home_page = "login"
 
 # Website Route Rules
 # ------------------
-website_route_rules = [
-    {"from_route": "/404", "to_route": "on_desk.www.404"},
-]
+# website_route_rules = [
+#     {"from_route": "/404", "to_route": "on_desk.www.404"},
+#     {"from_route": "/on-desk/404", "to_route": "on_desk.www.404"},
+#     {"from_route": "/on-desk/test-event", "to_route": "on_desk.www.on-desk.test-event.index"},
+#     {"from_route": "/on-desk/polling-test", "to_route": "on_desk.www.on-desk.polling-test"},
+# ]
 
 # Website redirects
 # Note: This is a simplified approach. In a production environment,
 # you would need to exclude all valid routes from this regex.
-website_redirects = [
-    {
-        "source": r"/on-desk/(?!(index|whatsapp|tickets|404)($|/))(.*)",
-        "target": "/on-desk/404",
-        "match_with_query_string": False,
-    }
-]
+# website_redirects = [
+#     {
+#         "source": r"/on-desk/(?!(index|whatsapp|tickets|test-event|404)($|/))(.*)",
+#         "target": "/404",
+#         "match_with_query_string": False,
+#     }
+# ]
 
 # Jinja
 # ----------

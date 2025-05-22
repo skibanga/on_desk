@@ -1,195 +1,131 @@
-<!DOCTYPE html>
-<html lang="en-US" dir="ltr">
+{% extends "on_desk/www/on-desk/base.html" %}
 
-<head>
-    {% include "www/on-desk/includes/head.html" %}
-    
-    {% block page_css %}
-    <style>
-        .error-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 2rem;
-            height: calc(100vh - 200px);
-        }
-        
-        .error-code {
-            font-size: 8rem;
-            font-weight: 900;
-            line-height: 1;
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, var(--primary-color), var(--warning-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .error-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            color: var(--text-dark);
-        }
-        
-        .error-message {
-            font-size: 1.2rem;
-            color: var(--text-light);
-            margin-bottom: 2rem;
-            max-width: 600px;
-        }
-        
-        .error-actions {
-            display: flex;
-            gap: 1rem;
-        }
-        
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .btn i {
-            margin-right: 0.5rem;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--primary-light);
-            color: var(--primary-color);
-        }
-        
-        .btn-outline {
-            background-color: transparent;
-            color: var(--text-dark);
-            border: 1px solid var(--border-color);
-        }
-        
-        .btn-outline:hover {
-            background-color: var(--bg-card);
-            border-color: var(--text-light);
-        }
-        
-        .error-illustration {
-            max-width: 400px;
-            margin-bottom: 2rem;
-        }
-        
-        /* Animation */
-        @keyframes float {
-            0% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-20px);
-            }
-            100% {
-                transform: translateY(0px);
-            }
-        }
-        
-        .floating {
-            animation: float 6s ease-in-out infinite;
-        }
-        
-        /* SVG styles */
-        .astronaut {
-            max-width: 300px;
-            margin-bottom: 2rem;
-        }
-        
-        .star {
-            animation: twinkle 1.5s infinite alternate;
-        }
-        
-        .star:nth-child(2n) {
-            animation-delay: 0.5s;
-        }
-        
-        .star:nth-child(3n) {
-            animation-delay: 1s;
-        }
-        
-        @keyframes twinkle {
-            from {
-                opacity: 0.4;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-    </style>
-    {% endblock %}
-</head>
+{% block page_content %}
+<div class="error-container">
+    <div class="astronaut floating">
+        <svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Stars -->
+            <circle class="star" cx="50" cy="50" r="2" fill="white" />
+            <circle class="star" cx="100" cy="30" r="1.5" fill="white" />
+            <circle class="star" cx="150" cy="20" r="2" fill="white" />
+            <circle class="star" cx="200" cy="40" r="1" fill="white" />
+            <circle class="star" cx="250" cy="60" r="1.5" fill="white" />
+            <circle class="star" cx="30" cy="100" r="1" fill="white" />
+            <circle class="star" cx="70" cy="150" r="1.5" fill="white" />
+            <circle class="star" cx="220" cy="120" r="2" fill="white" />
+            <circle class="star" cx="180" cy="180" r="1" fill="white" />
+            <circle class="star" cx="120" cy="220" r="1.5" fill="white" />
 
-<body>
-    <div class="app-container">
-        {% include "www/on-desk/includes/sidebar.html" %}
+            <!-- Astronaut -->
+            <g transform="translate(100, 100)">
+                <!-- Helmet -->
+                <ellipse cx="50" cy="50" rx="40" ry="45" fill="#16526e" />
+                <ellipse cx="50" cy="50" rx="30" ry="35" fill="#1e293b" />
 
-        <!-- Main Content -->
-        <div class="main-content">
-            {% include "www/on-desk/includes/header.html" %}
+                <!-- Body -->
+                <rect x="30" y="80" width="40" height="60" rx="20" fill="#16526e" />
 
-            <div class="error-container">
-                <div class="astronaut floating">
-                    <svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Stars -->
-                        <circle class="star" cx="50" cy="50" r="2" fill="white"/>
-                        <circle class="star" cx="100" cy="30" r="1.5" fill="white"/>
-                        <circle class="star" cx="150" cy="20" r="2" fill="white"/>
-                        <circle class="star" cx="200" cy="40" r="1" fill="white"/>
-                        <circle class="star" cx="250" cy="60" r="1.5" fill="white"/>
-                        <circle class="star" cx="30" cy="100" r="1" fill="white"/>
-                        <circle class="star" cx="70" cy="150" r="1.5" fill="white"/>
-                        <circle class="star" cx="220" cy="120" r="2" fill="white"/>
-                        <circle class="star" cx="180" cy="180" r="1" fill="white"/>
-                        <circle class="star" cx="120" cy="220" r="1.5" fill="white"/>
-                        
-                        <!-- Astronaut -->
-                        <g transform="translate(100, 100)">
-                            <!-- Helmet -->
-                            <ellipse cx="50" cy="50" rx="40" ry="45" fill="#16526e" />
-                            <ellipse cx="50" cy="50" rx="30" ry="35" fill="#1e293b" />
-                            
-                            <!-- Body -->
-                            <rect x="30" y="80" width="40" height="60" rx="20" fill="#16526e" />
-                            
-                            <!-- Arms -->
-                            <rect x="10" y="90" width="30" height="15" rx="7.5" fill="#16526e" transform="rotate(-20 10 90)" />
-                            <rect x="60" y="90" width="30" height="15" rx="7.5" fill="#16526e" transform="rotate(20 60 90)" />
-                            
-                            <!-- Legs -->
-                            <rect x="30" y="130" width="15" height="30" rx="7.5" fill="#16526e" transform="rotate(10 30 130)" />
-                            <rect x="55" y="130" width="15" height="30" rx="7.5" fill="#16526e" transform="rotate(-10 55 130)" />
-                        </g>
-                    </svg>
-                </div>
-                <div class="error-code">404</div>
-                <h1 class="error-title">Houston, we have a problem!</h1>
-                <p class="error-message">The page you're looking for seems to have drifted off into space. It might have been moved, deleted, or never existed in the first place.</p>
-                <div class="error-actions">
-                    <a href="/on-desk" class="btn btn-primary"><i class="uil uil-estate"></i> Back to Dashboard</a>
-                    <a href="javascript:history.back()" class="btn btn-outline"><i class="uil uil-arrow-left"></i> Go Back</a>
-                </div>
-            </div>
-        </div>
+                <!-- Arms -->
+                <rect x="10" y="90" width="30" height="15" rx="7.5" fill="#16526e" transform="rotate(-20 10 90)" />
+                <rect x="60" y="90" width="30" height="15" rx="7.5" fill="#16526e" transform="rotate(20 60 90)" />
+
+                <!-- Legs -->
+                <rect x="30" y="130" width="15" height="30" rx="7.5" fill="#16526e" transform="rotate(10 30 130)" />
+                <rect x="55" y="130" width="15" height="30" rx="7.5" fill="#16526e" transform="rotate(-10 55 130)" />
+            </g>
+        </svg>
     </div>
+    <div class="error-code">404</div>
+    <h1 class="error-title">Houston, we have a problem!</h1>
+    <p class="error-message">The page you're looking for seems to have drifted off into space. It might have been moved,
+        deleted, or never existed in the first place.</p>
+    <div class="error-actions">
+        <a href="/on-desk" class="btn btn-primary"><i class="uil uil-estate"></i> Back to Dashboard</a>
+        <a href="javascript:history.back()" class="btn btn-outline"><i class="uil uil-arrow-left"></i> Go Back</a>
+    </div>
+</div>
+{% endblock %}
 
-    {% include "www/on-desk/includes/scripts.html" %}
-</body>
+{% block page_js %}
+<style>
+    .error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem;
+        height: calc(100vh - 200px);
+    }
 
-</html>
+    .error-code {
+        font-size: 8rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 1rem;
+        background: linear-gradient(45deg, var(--primary-color, #16526e), var(--warning-color, #f59e0b));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .error-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .error-message {
+        font-size: 1.2rem;
+        color: #94a3b8;
+        margin-bottom: 2rem;
+        max-width: 600px;
+    }
+
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    /* Animation */
+    @keyframes float {
+        0% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-20px);
+        }
+
+        100% {
+            transform: translateY(0px);
+        }
+    }
+
+    .floating {
+        animation: float 6s ease-in-out infinite;
+    }
+
+    .star {
+        animation: twinkle 1.5s infinite alternate;
+    }
+
+    .star:nth-child(2n) {
+        animation-delay: 0.5s;
+    }
+
+    .star:nth-child(3n) {
+        animation-delay: 1s;
+    }
+
+    @keyframes twinkle {
+        from {
+            opacity: 0.4;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+</style>
+{% endblock %}
