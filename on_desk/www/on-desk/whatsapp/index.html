@@ -1,8 +1,32 @@
 {% extends "templates/web.html" %}
 
 {% block head_include %}
+<!-- Include lodash first to fix "merge" error -->
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+
 <!-- Include socket.io client library -->
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+
+<!-- Fallback for lodash -->
+<script>
+    if (typeof _ === 'undefined') {
+        console.log("Lodash not found, creating minimal implementation...");
+        window._ = {
+            merge: function() {
+                var result = {};
+                for (var i = 0; i < arguments.length; i++) {
+                    var obj = arguments[i];
+                    for (var key in obj) {
+                        if (obj.hasOwnProperty(key)) {
+                            result[key] = obj[key];
+                        }
+                    }
+                }
+                return result;
+            }
+        };
+    }
+</script>
 {% endblock %}
 
 {% block page_content %}
@@ -171,7 +195,7 @@
 
 {% block script %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    $(document).ready(function() {
         // Set up socket.io connection
         setupSocketConnection();
 
