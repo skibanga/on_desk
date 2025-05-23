@@ -210,14 +210,19 @@ def process_status_update(status, value, settings):
         message_doc.save(ignore_permissions=True)
 
         # Publish realtime event for status update
-        frappe.publish_realtime(
-            "whatsapp_message_status_update",
-            {
-                "message_id": message_id,
-                "status": new_status,
-                "from_number": message_doc.from_number,
-                "to_number": message_doc.to_number,
-            },
+        event_data = {
+            "message_id": message_id,
+            "status": new_status,
+            "from_number": message_doc.from_number,
+            "to_number": message_doc.to_number,
+            "timestamp": frappe.utils.now(),
+        }
+        frappe.publish_realtime("whatsapp_message_status_update", event_data)
+
+        # Log the event for debugging
+        frappe.log_error(
+            message=f"Published realtime event for status update: {message_id} -> {new_status}",
+            title="WhatsApp Realtime Event",
         )
 
         frappe.log_error(
@@ -252,14 +257,18 @@ def create_social_media_message(
     message_doc.insert(ignore_permissions=True)
 
     # Publish realtime event for incoming message
-    frappe.publish_realtime(
-        "whatsapp_message_received",
-        {
-            "message_id": message_id,
-            "from_number": from_number,
-            "message": text,
-            "timestamp": timestamp,
-        },
+    event_data = {
+        "message_id": message_id,
+        "from_number": from_number,
+        "message": text,
+        "timestamp": timestamp,
+    }
+    frappe.publish_realtime("whatsapp_message_received", event_data)
+
+    # Log the event for debugging
+    frappe.log_error(
+        message=f"Published realtime event for incoming message: {message_id}",
+        title="WhatsApp Realtime Event",
     )
 
     return message_doc.name

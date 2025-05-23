@@ -3,6 +3,8 @@
 
 <head>
     {% include "www/on-desk/includes/head.html" %}
+    <!-- Include socket.io client library -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 
     {% block page_css %}
     <style>
@@ -1796,8 +1798,135 @@
                     }
                 }
 
+                // Set up real-time updates using socket.io directly
+                function setupRealtimeEvents() {
+                    console.log("Setting up real-time event listeners for WhatsApp...");
+
+                    // Add debug info to the console
+                    console.log("Debug info:");
+                    console.log("- frappe defined:", typeof frappe !== 'undefined');
+                    console.log("- frappe.realtime available:", typeof frappe !== 'undefined' && frappe.realtime ? 'Yes' : 'No');
+                    console.log("- socket.io available:", typeof io !== 'undefined' ? 'Yes' : 'No');
+                    console.log("- socketio_port:", window.socketio_port || 'Not defined');
+
+                    // Try to use frappe.realtime first
+                    if (typeof frappe !== 'undefined' && frappe.realtime) {
+                        console.log("Using frappe.realtime for WhatsApp event listening");
+
+                        // Listen for WhatsApp messages
+                        frappe.realtime.on('whatsapp_message_received', function (data) {
+                            console.log("WhatsApp message received via frappe.realtime:", data);
+
+                            // If this message is for the active conversation, refresh the messages
+                            if (activeConversation && data.from_number === activeConversation.phone) {
+                                loadConversation(activeConversation.phone, activeConversation.name);
+                            }
+
+                            // Refresh the conversations list
+                            refreshConversations();
+                        });
+
+                        // Listen for message status updates
+                        frappe.realtime.on('whatsapp_message_status_update', function (data) {
+                            console.log("WhatsApp message status update via frappe.realtime:", data);
+
+                            // If this message is in the current view, update its status
+                            updateMessageStatus(data);
+                        });
+
+                        // Listen for sent messages
+                        frappe.realtime.on('whatsapp_message_sent', function (data) {
+                            console.log("WhatsApp message sent via frappe.realtime:", data);
+
+                            // If this message is for the active conversation, refresh the messages
+                            if (activeConversation && data.phone_number === activeConversation.phone) {
+                                loadConversation(activeConversation.phone, activeConversation.name);
+                            }
+
+                            // Refresh the conversations list
+                            refreshConversations();
+                        });
+                    } else {
+                        console.warn("frappe.realtime not available, trying to connect directly");
+
+                        // Try to connect directly using socket.io
+                        try {
+                            // Check if socket.io is available
+                            if (typeof io === 'undefined') {
+                                throw new Error("socket.io is not loaded. Make sure the socket.io client library is included.");
+                            }
+
+                            // Get the socket.io port from the window object
+                            const socketioPort = window.socketio_port || 9000;
+
+                            // Get the site name from the URL
+                            const siteName = window.location.hostname;
+
+                            // Create the socket.io URL
+                            const socketUrl = `http://${window.location.hostname}:${socketioPort}/${siteName}`;
+                            console.log("Connecting to socket.io at:", socketUrl);
+
+                            // Create the socket.io connection
+                            const socket = io(socketUrl, {
+                                withCredentials: true,
+                                reconnectionAttempts: 5
+                            });
+
+                            // Connection events
+                            socket.on("connect", () => {
+                                console.log("Socket.io connected directly");
+
+                                // Listen for WhatsApp messages
+                                socket.on("whatsapp_message_received", (data) => {
+                                    console.log("WhatsApp message received via direct socket.io:", data);
+
+                                    // If this message is for the active conversation, refresh the messages
+                                    if (activeConversation && data.from_number === activeConversation.phone) {
+                                        loadConversation(activeConversation.phone, activeConversation.name);
+                                    }
+
+                                    // Refresh the conversations list
+                                    refreshConversations();
+                                });
+
+                                // Listen for message status updates
+                                socket.on("whatsapp_message_status_update", (data) => {
+                                    console.log("WhatsApp message status update via direct socket.io:", data);
+
+                                    // If this message is in the current view, update its status
+                                    updateMessageStatus(data);
+                                });
+
+                                // Listen for sent messages
+                                socket.on("whatsapp_message_sent", (data) => {
+                                    console.log("WhatsApp message sent via direct socket.io:", data);
+
+                                    // If this message is for the active conversation, refresh the messages
+                                    if (activeConversation && data.phone_number === activeConversation.phone) {
+                                        loadConversation(activeConversation.phone, activeConversation.name);
+                                    }
+
+                                    // Refresh the conversations list
+                                    refreshConversations();
+                                });
+
+                                console.log("WhatsApp real-time events set up successfully");
+                            });
+
+                            socket.on("connect_error", (err) => {
+                                console.error("Socket.io connection error:", err);
+                            });
+                        } catch (e) {
+                            console.error("Error setting up direct socket.io connection:", e);
+                        }
+                    }
+                }
+
                 // Initialize the UI
                 initializeUI();
+
+                // Set up real-time events
+                setupRealtimeEvents();
 
                 // Ensure all event handlers are properly set up
                 ensureEventHandlers();
