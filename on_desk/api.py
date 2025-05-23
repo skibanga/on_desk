@@ -1,7 +1,6 @@
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
-import json
 
 
 @frappe.whitelist(allow_guest=True)
@@ -256,53 +255,3 @@ def create_ticket_activity(ticket, action, description):
             ).insert(ignore_permissions=True)
     except Exception as e:
         frappe.logger().error(f"Error creating activity log: {str(e)}")
-
-
-@frappe.whitelist(allow_guest=True)
-def trigger_test_event(event_name=None, event_data=None):
-    """
-    Trigger a test event via socket.io
-
-    This function is whitelisted and allows guests, so it can be called from anywhere.
-    """
-    try:
-        # Default values
-        event_name = event_name or "test_event"
-
-        # Parse event data if it's a string
-        if event_data and isinstance(event_data, str):
-            try:
-                event_data = json.loads(event_data)
-            except:
-                event_data = {"message": event_data}
-        else:
-            event_data = event_data or {"message": "Test event", "timestamp": now_datetime()}
-
-        # Add timestamp if not present
-        if "timestamp" not in event_data:
-            event_data["timestamp"] = now_datetime()
-
-        # Log the event
-        frappe.log_error(
-            message=f"Triggering test event '{event_name}': {event_data}",
-            title="Test Event API"
-        )
-
-        # Publish the event
-        frappe.publish_realtime(event_name, event_data)
-
-        return {
-            "success": True,
-            "message": f"Event '{event_name}' triggered successfully",
-            "event_name": event_name,
-            "event_data": event_data
-        }
-    except Exception as e:
-        frappe.log_error(
-            message=f"Error triggering test event: {str(e)}",
-            title="Test Event API Error"
-        )
-        return {
-            "success": False,
-            "message": f"Error triggering test event: {str(e)}"
-        }

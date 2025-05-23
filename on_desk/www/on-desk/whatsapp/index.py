@@ -82,9 +82,6 @@ def get_context(context):
     # Add CSRF token to context
     context.csrf_token = frappe.sessions.get_csrf_token()
 
-    # Add socket.io port to context
-    context.socketio_port = frappe.conf.get("socketio_port") or 9000
-
     return context
 
 

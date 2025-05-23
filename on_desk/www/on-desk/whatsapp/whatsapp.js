@@ -175,11 +175,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Start polling for status updates
                     startMessageStatusUpdates();
                 } else {
-                    // Get error details
-                    const errorData = response.message || {};
-                    const errorMessage = errorData.error ? errorData.error : 'Failed to send message';
-
-                    // Update the temporary message to show failure
+                    // Show error
                     const tempMessage = document.querySelector(`[data-message-id="${tempId}"]`);
                     if (tempMessage) {
                         tempMessage.querySelector('.message-status').innerHTML = `
@@ -188,41 +184,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         `;
                     }
 
-                    // Check if this is an authentication error
-                    if (errorData.auth_error || (errorMessage && (errorMessage.includes('401 Unauthorized') || errorMessage.includes('Authentication Failed')))) {
-                        // Show a more detailed error for authentication issues
-                        const helpMessage = errorData.help || 'Please check your WhatsApp integration settings.';
-
-                        // Create a more detailed error message
-                        const detailedError = `
-                            <div class="auth-error-message">
-                                <p><strong>Authentication Error:</strong> ${errorMessage}</p>
-                                <p>${helpMessage}</p>
-                                <p>To fix this issue:</p>
-                                <ol>
-                                    <li>Go to WhatsApp Integration settings</li>
-                                    <li>Update your API key</li>
-                                    <li>Save the settings</li>
-                                </ol>
-                            </div>
-                        `;
-
-                        // Show a modal with the detailed error
-                        frappe.msgprint({
-                            title: 'WhatsApp Authentication Error',
-                            message: detailedError,
-                            indicator: 'red'
-                        });
-                    } else {
-                        // Show a regular error message
-                        frappe.msgprint({
-                            title: __('Error'),
-                            indicator: 'red',
-                            message: __('Failed to send message: ') + errorMessage
-                        });
-                    }
-
-                    console.error('WhatsApp send error:', errorData);
+                    frappe.msgprint({
+                        title: __('Error'),
+                        indicator: 'red',
+                        message: __('Failed to send message. Please try again.')
+                    });
                 }
             }
         });
@@ -314,17 +280,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
             });
-        }
-
-        // Set up test API button
-        const testApiBtn = document.querySelector('#test-api-btn');
-        if (testApiBtn) {
-            console.log("Setting up test API button");
-            testApiBtn.addEventListener('click', function () {
-                testApiConnection();
-            });
-        } else {
-            console.warn("Test API button not found");
         }
     }
 
@@ -625,64 +580,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (typeof on_desk !== 'undefined' && on_desk.realtime) {
             console.log("Using on_desk.realtime client for WhatsApp events");
 
-            // Make sure the socket is connected and events are registered
-            if (on_desk.realtime.ensure_whatsapp_events) {
-                console.log("Calling ensure_whatsapp_events...");
-                const result = on_desk.realtime.ensure_whatsapp_events();
-                console.log("ensure_whatsapp_events result:", result);
-
-                // Debug the WhatsApp events
-                if (on_desk.realtime.debug_whatsapp) {
-                    console.log("Calling debug_whatsapp...");
-                    on_desk.realtime.debug_whatsapp();
-                }
-            } else {
-                console.warn("ensure_whatsapp_events method not found");
-                // If the method doesn't exist, initialize the socket
-                if (on_desk.realtime.init) {
-                    console.log("Initializing socket directly...");
-                    on_desk.realtime.init();
-                } else {
-                    console.error("on_desk.realtime.init method not found");
-                }
-            }
-
-            // Add direct event listeners to the socket
-            if (on_desk.realtime.socket) {
-                console.log("Adding direct event listeners to socket...");
-                on_desk.realtime.socket.on("whatsapp_message_received", function (data) {
-                    console.log("Direct socket event: whatsapp_message_received", data);
-                    processWhatsAppMessage(data);
-                });
-
-                on_desk.realtime.socket.on("whatsapp_message_received_immediate", function (data) {
-                    console.log("Direct socket event: whatsapp_message_received_immediate", data);
-                    processWhatsAppMessage(data);
-                });
-            } else {
-                console.warn("on_desk.realtime.socket not available for direct event binding");
-            }
-
-            // Listen for incoming and outgoing messages
+            // Listen for incoming messages
             on_desk.realtime.on('whatsapp_message_received', function (data) {
                 console.log("WhatsApp message received via on_desk.realtime:", data);
 
-                // Show a notification
-                showNotification("New WhatsApp Message",
-                    data.direction === "Outgoing" ?
-                        `Message sent to ${data.to_number}` :
-                        `New message from ${data.from_number}`);
+                // If this message is for the active conversation, refresh the messages
+                if (activeConversation && data.from_number === activeConversation.phone) {
+                    loadConversation(activeConversation.phone, activeConversation.name);
+                }
 
-                // Process the message
-                processWhatsAppMessage(data);
-            });
-
-            // Also listen for immediate messages
-            on_desk.realtime.on('whatsapp_message_received_immediate', function (data) {
-                console.log("WhatsApp message received immediate via on_desk.realtime:", data);
-
-                // Process the message
-                processWhatsAppMessage(data);
+                // Refresh the conversations list
+                refreshConversations();
             });
 
             // Listen for message status updates
@@ -692,57 +600,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 // If this message is in the current view, update its status
                 updateMessageStatus(data);
             });
-
-            // Also listen for immediate status updates
-            on_desk.realtime.on('whatsapp_message_status_update_immediate', function (data) {
-                console.log("WhatsApp message status update immediate via on_desk.realtime:", data);
-
-                // If this message is in the current view, update its status
-                updateMessageStatus(data);
-            });
-
-            // Set up reconnection handler
-            on_desk.realtime.on('reconnect', function () {
-                console.log("Socket reconnected, refreshing WhatsApp data...");
-
-                // Refresh conversations list
-                refreshConversations();
-
-                // Refresh active conversation if any
-                if (activeConversation) {
-                    loadConversation(activeConversation.phone, activeConversation.name);
-                }
-            });
         }
         // Fall back to frappe.realtime for backward compatibility
         else if (typeof frappe !== 'undefined' && frappe.realtime) {
             console.log("Falling back to frappe.realtime for WhatsApp events");
 
-            // Initialize frappe.realtime if needed
-            if (frappe.realtime.init && !frappe.realtime.socket) {
-                frappe.realtime.init();
-            }
-
-            // Listen for incoming and outgoing messages
+            // Listen for incoming messages
             frappe.realtime.on('whatsapp_message_received', function (data) {
                 console.log("WhatsApp message received via frappe.realtime:", data);
 
-                // Show a notification
-                showNotification("New WhatsApp Message",
-                    data.direction === "Outgoing" ?
-                        `Message sent to ${data.to_number}` :
-                        `New message from ${data.from_number}`);
+                // If this message is for the active conversation, refresh the messages
+                if (activeConversation && data.from_number === activeConversation.phone) {
+                    loadConversation(activeConversation.phone, activeConversation.name);
+                }
 
-                // Process the message
-                processWhatsAppMessage(data);
-            });
-
-            // Also listen for immediate messages
-            frappe.realtime.on('whatsapp_message_received_immediate', function (data) {
-                console.log("WhatsApp message received immediate via frappe.realtime:", data);
-
-                // Process the message
-                processWhatsAppMessage(data);
+                // Refresh the conversations list
+                refreshConversations();
             });
 
             // Listen for message status updates
@@ -752,96 +625,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 // If this message is in the current view, update its status
                 updateMessageStatus(data);
             });
-
-            // Also listen for immediate status updates
-            frappe.realtime.on('whatsapp_message_status_update_immediate', function (data) {
-                console.log("WhatsApp message status update immediate via frappe.realtime:", data);
-
-                // If this message is in the current view, update its status
-                updateMessageStatus(data);
-            });
         }
-
-        // Also set up DOM event listeners as a fallback
-        document.addEventListener('whatsapp_message_received', function (event) {
-            console.log("WhatsApp message received via DOM event:", event.detail);
-
-            // Process the message
-            processWhatsAppMessage(event.detail);
-        });
-
-        document.addEventListener('whatsapp_message_status_update', function (event) {
-            console.log("WhatsApp message status update via DOM event:", event.detail);
-
-            // If this message is in the current view, update its status
-            updateMessageStatus(event.detail);
-        });
-
-        // If no realtime client is available, show an error
-        if (typeof on_desk === 'undefined' && (typeof frappe === 'undefined' || !frappe.realtime)) {
+        else {
             console.error("No realtime client available for WhatsApp events");
         }
-    }
-
-    // Process a WhatsApp message event
-    function processWhatsAppMessage(data) {
-        // Check if this is an outgoing message for the active conversation
-        if (data.direction === "Outgoing" && activeConversation && data.to_number === activeConversation.phone) {
-            console.log("Outgoing message for active conversation, refreshing...");
-            loadConversation(activeConversation.phone, activeConversation.name);
-        }
-        // Check if this is an incoming message for the active conversation
-        else if (activeConversation && data.from_number === activeConversation.phone) {
-            console.log("Incoming message for active conversation, refreshing...");
-            loadConversation(activeConversation.phone, activeConversation.name);
-        } else {
-            // If it's not for the active conversation, just refresh the conversations list
-            // This ensures new conversations appear without a page reload
-            console.log("Message not for active conversation, refreshing list...");
-            refreshConversations();
-        }
-    }
-
-    // Show a notification
-    function showNotification(title, message) {
-        try {
-            // Check if notifications are supported
-            if (!("Notification" in window)) {
-                console.log("Notifications not supported");
-                return;
-            }
-
-            // Check if permission is granted
-            if (Notification.permission === "granted") {
-                new Notification(title, {
-                    body: message,
-                    icon: "/assets/on_desk/img/whatsapp-icon.png"
-                });
-            }
-            // Otherwise, request permission
-            else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(function (permission) {
-                    if (permission === "granted") {
-                        new Notification(title, {
-                            body: message,
-                            icon: "/assets/on_desk/img/whatsapp-icon.png"
-                        });
-                    }
-                });
-            }
-        } catch (e) {
-            console.error("Error showing notification:", e);
-        }
-    }
-
-    // Function to check socket connection periodically
-    function startSocketConnectionCheck() {
-        // Check connection every 30 seconds
-        setInterval(function () {
-            if (typeof on_desk !== 'undefined' && on_desk.realtime) {
-                on_desk.realtime.check_connection();
-            }
-        }, 30000);
     }
 
     // Helper function to update message status in the UI
@@ -876,154 +663,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Function to test WhatsApp events
-    function testWhatsAppEvent() {
-        // Show a loading message
-        frappe.show_alert({
-            message: __('Triggering test WhatsApp event...'),
-            indicator: 'blue'
-        });
-
-        // Log the action
-        console.log("Triggering test WhatsApp event...");
-
-        // Call the API to trigger a test event
-        frappe.call({
-            method: 'on_desk.on_desk.doctype.od_whatsapp_integration.api.test_whatsapp_event',
-            args: {
-                phone_number: activeConversation ? activeConversation.phone : null,
-                message: 'Test message from WhatsApp interface at ' + new Date().toLocaleTimeString()
-            },
-            callback: function (response) {
-                if (response.message && response.message.success) {
-                    frappe.show_alert({
-                        message: __('Test WhatsApp event triggered successfully!'),
-                        indicator: 'green'
-                    });
-
-                    console.log('Test WhatsApp event triggered:', response.message.event_data);
-
-                    // Add a temporary message to the UI
-                    if (activeConversation) {
-                        const tempId = 'temp_' + Date.now();
-                        addMessageToUI({
-                            id: tempId,
-                            from: response.message.event_data.from_number,
-                            message: response.message.event_data.message,
-                            timestamp: response.message.event_data.timestamp,
-                            direction: 'Incoming',
-                            status: 'Delivered',
-                            is_test: true
-                        });
-
-                        // Scroll to the bottom
-                        scrollToBottom();
-                    }
-                } else {
-                    frappe.show_alert({
-                        message: __('Failed to trigger test WhatsApp event'),
-                        indicator: 'red'
-                    });
-                    console.error('Failed to trigger test WhatsApp event:', response);
-                }
-            },
-            error: function (xhr, status, error) {
-                frappe.show_alert({
-                    message: __('Error triggering test WhatsApp event: ') + error,
-                    indicator: 'red'
-                });
-                console.error('Error triggering test WhatsApp event:', xhr, status, error);
-            }
-        });
-    }
-
-    // Add test button to the UI
-    function addTestButton() {
-        // Create the test button
-        const testButton = document.createElement('button');
-        testButton.className = 'btn btn-sm btn-outline-primary ms-2';
-        testButton.innerHTML = '<i class="uil uil-bolt"></i> Test Event';
-        testButton.title = 'Trigger a test WhatsApp event';
-        testButton.id = 'test-whatsapp-event-btn';
-        testButton.onclick = testWhatsAppEvent;
-
-        // Find the header actions container
-        const headerActions = document.querySelector('.whatsapp-header-actions');
-        if (headerActions) {
-            console.log("Adding test button to header actions");
-            headerActions.appendChild(testButton);
-        } else {
-            // If the header actions container doesn't exist, add it to the refresh button
-            const refreshButton = document.querySelector('#refresh-conversations-btn');
-            if (refreshButton && refreshButton.parentNode) {
-                console.log("Adding test button next to refresh button");
-                refreshButton.parentNode.appendChild(testButton);
-            } else {
-                // Last resort: add to the conversation header
-                const conversationHeader = document.querySelector('.conversation-header');
-                if (conversationHeader) {
-                    console.log("Adding test button to conversation header");
-                    conversationHeader.appendChild(testButton);
-                } else {
-                    console.warn("Could not find a suitable container for the test button");
-                }
-            }
-        }
-
-        console.log("Test button added:", testButton);
-    }
-
-    // Function to test API connection
-    function testApiConnection() {
-        console.log("Testing API connection...");
-
-        // Use our custom frappe.call implementation
-        $.ajax({
-            url: '/api/method/on_desk.www.on-desk.whatsapp.api.test_connection',
-            type: 'POST',
-            dataType: 'json',
-            headers: {
-                'X-Frappe-CSRF-Token': frappe.csrf_token || ''
-            },
-            success: function (response) {
-                console.log("Test API response:", response);
-                if (response.message && response.message.success) {
-                    // Show success message
-                    if (frappe.show_alert) {
-                        frappe.show_alert({
-                            message: 'API connection successful!',
-                            indicator: 'green'
-                        });
-                    } else {
-                        alert('API connection successful!');
-                    }
-                } else {
-                    // Show error message
-                    if (frappe.show_alert) {
-                        frappe.show_alert({
-                            message: 'API connection failed',
-                            indicator: 'red'
-                        });
-                    } else {
-                        alert('API connection failed');
-                    }
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error("API test error:", xhr, status, error);
-                // Show error message
-                if (frappe.show_alert) {
-                    frappe.show_alert({
-                        message: 'API connection failed: ' + error,
-                        indicator: 'red'
-                    });
-                } else {
-                    alert('API connection failed: ' + error);
-                }
-            }
-        });
-    }
-
     // Set up realtime events
     setupRealtimeEvents();
 
@@ -1032,84 +671,3 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initial load of conversations
     refreshConversations();
-
-    // Start periodic socket connection check
-    startSocketConnectionCheck();
-
-    // Helper function to add a message to the UI
-    function addMessageToUI(message) {
-        const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
-        if (!messagesContainer) {
-            console.error("Messages container not found");
-            return;
-        }
-
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message');
-        messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
-        messageElement.dataset.messageId = message.id;
-
-        // Format timestamp
-        const timestamp = new Date(message.timestamp * 1000);
-        const timeString = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        let messageContent = `
-            ${message.message}
-            <div class="message-time">${timeString}</div>
-        `;
-
-        if (message.direction === 'Outgoing') {
-            let statusIcon = '';
-            let statusClass = '';
-
-            if (message.status === 'Sent') {
-                statusIcon = 'uil-check';
-                statusClass = 'status-sent';
-            } else if (message.status === 'Delivered') {
-                statusIcon = 'uil-check-double';
-                statusClass = 'status-delivered';
-            } else if (message.status === 'Read') {
-                statusIcon = 'uil-check-double';
-                statusClass = 'status-read';
-            } else if (message.status === 'Failed') {
-                statusIcon = 'uil-times';
-                statusClass = 'status-failed';
-            }
-
-            messageContent += `
-                <div class="message-status">
-                    <span>${message.status}</span>
-                    <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
-                </div>
-            `;
-        }
-
-        // Add test indicator if this is a test message
-        if (message.is_test) {
-            messageContent += `
-                <div class="test-indicator" style="font-size: 0.75rem; color: #999; margin-top: 0.25rem;">
-                    <i class="uil uil-bolt"></i> Test Message
-                </div>
-            `;
-        }
-
-        messageElement.innerHTML = messageContent;
-        messagesContainer.appendChild(messageElement);
-
-        return messageElement;
-    }
-
-    // Helper function to scroll to the bottom of the messages container
-    function scrollToBottom() {
-        const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
-        if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-    }
-
-    // Add test button after a short delay to ensure the UI is loaded
-    setTimeout(addTestButton, 1000);
-
-    // Test API connection
-    testApiConnection();
-});

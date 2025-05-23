@@ -145,7 +145,6 @@ def send_message(phone_number, message):
     """Send a WhatsApp message to a specific phone number"""
     import traceback
     import json
-    import datetime
 
     # Log the function call with all parameters
     frappe.log_error(
@@ -230,29 +229,8 @@ def send_message(phone_number, message):
                 msg.status = "Sent"
                 msg.insert(ignore_permissions=True)
                 frappe.db.commit()
-
-                # Prepare event data
-                event_data = {
-                    "message_id": message_id,
-                    "from_number": settings.phone_number,
-                    "to_number": phone_number,
-                    "message": message,
-                    "timestamp": int(datetime.datetime.now().timestamp()),
-                    "direction": "Outgoing",
-                }
-
-                # Publish immediate realtime event for outgoing message
-                frappe.publish_realtime(
-                    "whatsapp_message_received_immediate", event_data
-                )
-
-                # Publish regular realtime event for outgoing message
-                frappe.publish_realtime(
-                    "whatsapp_message_received", event_data, after_commit=True
-                )
-
                 frappe.log_error(
-                    message=f"Created message record: {msg.name} and published realtime events (immediate and after_commit)\nMessage ID: {message_id}\nTo: {phone_number}\nMessage: {message}",
+                    message=f"Created message record: {msg.name}",
                     title="WhatsApp Debug",
                 )
             except Exception as e:
@@ -267,38 +245,7 @@ def send_message(phone_number, message):
             error_msg = "Failed to send message: No response from WhatsApp API"
             frappe.log_error(message=error_msg, title="WhatsApp Debug")
             return {"success": False, "error": error_msg}
-    except frappe.exceptions.ValidationError as e:
-        # This is a validation error from the WhatsApp integration
-        error_trace = traceback.format_exc()
-        error_message = str(e)
-
-        # Check if this is an authentication error
-        if (
-            "401 Unauthorized" in error_message
-            or "Authentication Failed" in error_message
-        ):
-            # This is an authentication error
-            frappe.log_error(
-                message=f"WhatsApp Authentication Error: {error_message}\n\nTraceback:\n{error_trace}",
-                title="WhatsApp Authentication Error",
-            )
-
-            # Return a more user-friendly error message
-            return {
-                "success": False,
-                "error": error_message,
-                "auth_error": True,
-                "help": "Please check your WhatsApp API key in the integration settings.",
-            }
-        else:
-            # This is some other validation error
-            frappe.log_error(
-                message=f"WhatsApp Send Message Error: {error_message}\n\nTraceback:\n{error_trace}",
-                title="WhatsApp API Error",
-            )
-            return {"success": False, "error": error_message}
     except Exception as e:
-        # This is an unexpected error
         error_trace = traceback.format_exc()
         frappe.log_error(
             message=f"WhatsApp Send Message Error: {str(e)}\n\nTraceback:\n{error_trace}",

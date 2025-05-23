@@ -5,28 +5,7 @@
  * It handles real-time events for WhatsApp messages and other notifications.
  */
 
-// Create the on_desk namespace if it doesn't exist
-window.on_desk = window.on_desk || {};
-// Create the realtime object if it doesn't exist
-window.on_desk.realtime = window.on_desk.realtime || {};
-
-// Create a minimal frappe object if it doesn't exist
-if (typeof window.frappe === 'undefined') {
-    window.frappe = {
-        _: window._ || {}, // Use lodash if available
-        provide: function (namespace) {
-            let parts = namespace.split('.');
-            let current = window;
-
-            for (let i = 0; i < parts.length; i++) {
-                current[parts[i]] = current[parts[i]] || {};
-                current = current[parts[i]];
-            }
-
-            return current;
-        }
-    };
-}
+frappe.provide("on_desk.realtime");
 
 class OnDeskRealtimeClient {
     constructor() {
@@ -42,7 +21,7 @@ class OnDeskRealtimeClient {
      * @param {number} port - The socket.io port
      * @param {boolean} lazy_connect - Whether to connect lazily
      */
-    init(port = null, lazy_connect = false) {
+    init(port = 9000, lazy_connect = false) {
         console.log("Initializing On Desk realtime client...");
 
         if (this.socket) {
@@ -50,11 +29,12 @@ class OnDeskRealtimeClient {
             return;
         }
 
-        try {
-            // Get the host URL
-            const host = this.get_host(port);
-            console.log("Socket.io host:", host);
+        // Get the host URL
+        const host = this.get_host(port);
+        console.log("Socket.io host:", host);
 
+        // Initialize socket with proper options
+        try {
             // Enable secure option when using HTTPS
             if (window.location.protocol == "https:") {
                 this.socket = io(host, {
@@ -63,7 +43,7 @@ class OnDeskRealtimeClient {
                     reconnectionAttempts: this.max_reconnect_attempts,
                     autoConnect: !lazy_connect,
                 });
-            } else {
+            } else if (window.location.protocol == "http:") {
                 this.socket = io(host, {
                     withCredentials: true,
                     reconnectionAttempts: this.max_reconnect_attempts,
@@ -92,11 +72,6 @@ class OnDeskRealtimeClient {
      * Set up socket event handlers
      */
     setup_socket_events() {
-        if (!this.socket) {
-            console.error("Cannot setup events: Socket not initialized");
-            return;
-        }
-
         // Connection events
         this.socket.on("connect", () => {
             console.log("Socket.io connected");
@@ -105,21 +80,6 @@ class OnDeskRealtimeClient {
 
             // Trigger any registered connect callbacks
             this.trigger("connect");
-
-            // Re-register for WhatsApp events on reconnection
-            this.register_whatsapp_events();
-        });
-
-        this.socket.on("reconnect", (attemptNumber) => {
-            console.log(`Socket.io reconnected after ${attemptNumber} attempts`);
-            this.connected = true;
-            this.reconnect_attempts = 0;
-
-            // Trigger reconnect event
-            this.trigger("reconnect", attemptNumber);
-
-            // Re-register for WhatsApp events on reconnection
-            this.register_whatsapp_events();
         });
 
         this.socket.on("disconnect", () => {
@@ -146,93 +106,15 @@ class OnDeskRealtimeClient {
             this.trigger("pong");
         });
 
-        // Register WhatsApp events
-        this.register_whatsapp_events();
-    }
-
-    /**
-     * Register for WhatsApp specific events
-     * This is separated so it can be called on reconnection
-     */
-    register_whatsapp_events() {
-        console.log("Registering for WhatsApp events...");
-
-        if (!this.socket) {
-            console.error("Cannot register WhatsApp events: Socket not initialized");
-            return;
-        }
-
         // WhatsApp specific events
         this.socket.on("whatsapp_message_received", (data) => {
-            console.log("WhatsApp message received via socket.io:", data);
-
-            // Log more details for debugging
-            if (data) {
-                console.log(`Message details - ID: ${data.message_id}, From: ${data.from_number}, Message: ${data.message && data.message.substring(0, 30)}...`);
-            }
-
-            // Trigger the event for any listeners
+            console.log("WhatsApp message received:", data);
             this.trigger("whatsapp_message_received", data);
-
-            // Also emit a DOM event for jQuery listeners
-            try {
-                const event = new CustomEvent('whatsapp_message_received', { detail: data });
-                document.dispatchEvent(event);
-                console.log("Dispatched DOM event: whatsapp_message_received");
-
-                // For older browsers that might be using jQuery
-                if (window.jQuery) {
-                    window.jQuery(document).trigger('whatsapp_message_received', data);
-                    console.log("Triggered jQuery event: whatsapp_message_received");
-                }
-            } catch (e) {
-                console.error("Error dispatching DOM event:", e);
-            }
         });
 
         this.socket.on("whatsapp_message_status_update", (data) => {
-            console.log("WhatsApp message status update via socket.io:", data);
-
-            // Log more details for debugging
-            if (data) {
-                console.log(`Status update details - ID: ${data.message_id}, Status: ${data.status}`);
-            }
-
-            // Trigger the event for any listeners
+            console.log("WhatsApp message status update:", data);
             this.trigger("whatsapp_message_status_update", data);
-
-            // Also emit a DOM event for jQuery listeners
-            try {
-                const event = new CustomEvent('whatsapp_message_status_update', { detail: data });
-                document.dispatchEvent(event);
-                console.log("Dispatched DOM event: whatsapp_message_status_update");
-
-                // For older browsers that might be using jQuery
-                if (window.jQuery) {
-                    window.jQuery(document).trigger('whatsapp_message_status_update', data);
-                    console.log("Triggered jQuery event: whatsapp_message_status_update");
-                }
-            } catch (e) {
-                console.error("Error dispatching DOM event:", e);
-            }
-        });
-
-        // Also listen for the immediate versions of these events (without after_commit)
-        this.socket.on("whatsapp_message_received_immediate", (data) => {
-            console.log("WhatsApp message received immediate via socket.io:", data);
-            this.trigger("whatsapp_message_received", data);
-
-            // Also dispatch DOM events
-            try {
-                const event = new CustomEvent('whatsapp_message_received', { detail: data });
-                document.dispatchEvent(event);
-
-                if (window.jQuery) {
-                    window.jQuery(document).trigger('whatsapp_message_received', data);
-                }
-            } catch (e) {
-                console.error("Error dispatching DOM event:", e);
-            }
         });
     }
 
@@ -324,16 +206,13 @@ class OnDeskRealtimeClient {
      * @param {number} port - The socket.io port
      * @returns {string} The host URL
      */
-    get_host(port = null) {
+    get_host(port = 9000) {
         let host = window.location.origin;
         let sitename = window.site_name || frappe.boot?.sitename || '';
 
-        // Use the provided port, or get it from window.socketio_port, or use 9001 as fallback
-        port = port || window.socketio_port || 9001;
-
-        if (window.location.port) {
-            // If we're in a development environment with a custom port
+        if (window.dev_server) {
             let parts = host.split(":");
+            port = window.socketio_port || port.toString() || "9000";
             if (parts.length > 2) {
                 host = parts[0] + ":" + parts[1];
             }
@@ -349,94 +228,6 @@ class OnDeskRealtimeClient {
     ping() {
         this.emit("ping");
     }
-
-    /**
-     * Check if the socket is connected and reconnect if needed
-     * @returns {boolean} Whether the socket is connected
-     */
-    check_connection() {
-        console.log("Checking socket connection status...");
-
-        if (!this.socket) {
-            console.error("Socket not initialized. Initializing now...");
-            this.init();
-            return false;
-        }
-
-        if (!this.connected) {
-            console.log("Socket not connected. Reconnecting...");
-            this.connect();
-            return false;
-        }
-
-        console.log("Socket connection is active.");
-        return true;
-    }
-
-    /**
-     * Ensure WhatsApp events are registered
-     * This can be called from the WhatsApp interface to make sure events are registered
-     */
-    ensure_whatsapp_events() {
-        console.log("Ensuring WhatsApp events are registered...");
-
-        if (!this.socket) {
-            console.log("Socket not initialized. Initializing now...");
-            this.init();
-
-            // Set up a one-time connect handler to register events
-            this.socket.once("connect", () => {
-                console.log("Socket connected, registering WhatsApp events...");
-                this.register_whatsapp_events();
-            });
-
-            return false;
-        }
-
-        if (!this.connected) {
-            console.log("Socket not connected. Reconnecting...");
-            this.connect();
-
-            // Set up a one-time connect handler to register events
-            this.socket.once("connect", () => {
-                console.log("Socket reconnected, registering WhatsApp events...");
-                this.register_whatsapp_events();
-            });
-
-            return false;
-        }
-
-        // Re-register for WhatsApp events
-        console.log("Socket already connected, registering WhatsApp events...");
-        this.register_whatsapp_events();
-
-        // Emit a test event to verify connection
-        this.emit("ping");
-        console.log("Sent ping to verify connection");
-
-        return true;
-    }
-
-    /**
-     * Debug WhatsApp events
-     * This can be called to log the current state of WhatsApp events
-     */
-    debug_whatsapp() {
-        console.log("Debugging WhatsApp events...");
-        console.log("Socket initialized:", !!this.socket);
-        console.log("Socket connected:", this.connected);
-
-        if (this.socket) {
-            console.log("Socket has whatsapp_message_received handler:",
-                this.socket.hasListeners("whatsapp_message_received"));
-            console.log("Socket has whatsapp_message_status_update handler:",
-                this.socket.hasListeners("whatsapp_message_status_update"));
-        }
-
-        // Test the connection
-        this.emit("ping");
-        console.log("Sent ping to test connection");
-    }
 }
 
 // Create a singleton instance
@@ -450,9 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(function () {
         try {
             // Get the socket.io port from the window object
-            const port = window.socketio_port || 9001;
-
-            console.log("Using socket.io port:", port);
+            const port = window.socketio_port || 9000;
 
             // Initialize the realtime client
             on_desk.realtime.init(port);
