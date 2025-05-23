@@ -1862,15 +1862,39 @@
                             // Get the site name from the URL
                             const siteName = window.location.hostname;
 
-                            // Create the socket.io URL - use same protocol as the page
-                            const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-                            const socketUrl = `${protocol}//${window.location.hostname}:${socketioPort}/${siteName}`;
+                            // For production sites, we need to use HTTP for socket.io even on HTTPS pages
+                            // This is because the socket.io server may not have a valid SSL certificate
+                            const socketUrl = `http://${window.location.hostname}:${socketioPort}/${siteName}`;
                             console.log("Connecting to socket.io at:", socketUrl);
 
-                            // Create the socket.io connection
+                            // Add a note about mixed content
+                            console.log("Note: Using HTTP for socket.io connection. This may cause mixed content warnings in the console, but it's necessary for compatibility.");
+
+                            // Create the socket.io connection with secure: false to allow HTTP connections on HTTPS pages
                             const socket = io(socketUrl, {
                                 withCredentials: true,
-                                reconnectionAttempts: 5
+                                reconnectionAttempts: 5,
+                                secure: false,
+                                rejectUnauthorized: false // Allow self-signed certificates
+                            });
+
+                            // Add a special handler for mixed content errors
+                            socket.on("connect_error", (err) => {
+                                console.error("Socket.io connection error:", err);
+
+                                // If we're on HTTPS and get a mixed content error, show a helpful message
+                                if (window.location.protocol === 'https:' &&
+                                    (err.message.includes('Mixed Content') ||
+                                        err.message.includes('blocked') ||
+                                        err.message.includes('ERR_SSL_PROTOCOL_ERROR'))) {
+                                    console.warn("Mixed content error detected. This happens when loading socket.io over HTTP on an HTTPS page.");
+                                    console.warn("To fix this, either configure socket.io with SSL or enable mixed content in your browser.");
+                                    console.warn("For Chrome: click the shield icon in the address bar and select 'Load unsafe scripts'");
+                                    console.warn("For Firefox: click the shield icon in the address bar and select 'Disable protection for now'");
+
+                                    // Show a message to the user
+                                    alert("Real-time updates are blocked due to mixed content security. Check the console for instructions on how to enable them.");
+                                }
                             });
 
                             // Connection events

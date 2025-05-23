@@ -35,21 +35,14 @@ class OnDeskRealtimeClient {
 
         // Initialize socket with proper options
         try {
-            // Enable secure option when using HTTPS
-            if (window.location.protocol == "https:") {
-                this.socket = io(host, {
-                    secure: true,
-                    withCredentials: true,
-                    reconnectionAttempts: this.max_reconnect_attempts,
-                    autoConnect: !lazy_connect,
-                });
-            } else if (window.location.protocol == "http:") {
-                this.socket = io(host, {
-                    withCredentials: true,
-                    reconnectionAttempts: this.max_reconnect_attempts,
-                    autoConnect: !lazy_connect,
-                });
-            }
+            // Always use non-secure option for socket.io in production
+            // This is because the socket.io server may not have a valid SSL certificate
+            this.socket = io(host, {
+                secure: false,
+                withCredentials: true,
+                reconnectionAttempts: this.max_reconnect_attempts,
+                autoConnect: !lazy_connect,
+            });
 
             if (!this.socket) {
                 console.error("Unable to initialize socket.io connection to " + host);
@@ -207,15 +200,20 @@ class OnDeskRealtimeClient {
      * @returns {string} The host URL
      */
     get_host(port = 9000) {
-        let protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+        // Always use HTTP for socket.io connections in production
+        // This is because the socket.io server may not have a valid SSL certificate
+        let protocol = 'http:';
         let hostname = window.location.hostname;
         let sitename = window.site_name || frappe.boot?.sitename || '';
 
         // Use the provided port or the default
         port = window.socketio_port || port.toString() || "9000";
 
-        // Construct the host URL with the correct protocol
+        // Construct the host URL with HTTP protocol
         let host = `${protocol}//${hostname}:${port}`;
+
+        console.log("Using socket.io host:", host);
+        console.log("Note: Using HTTP for socket.io connection. This may cause mixed content warnings in the console, but it's necessary for compatibility.");
 
         return host + `/${sitename}`;
     }
