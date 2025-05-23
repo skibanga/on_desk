@@ -207,17 +207,15 @@ class OnDeskRealtimeClient {
      * @returns {string} The host URL
      */
     get_host(port = 9000) {
-        let host = window.location.origin;
+        let protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+        let hostname = window.location.hostname;
         let sitename = window.site_name || frappe.boot?.sitename || '';
 
-        if (window.dev_server) {
-            let parts = host.split(":");
-            port = window.socketio_port || port.toString() || "9000";
-            if (parts.length > 2) {
-                host = parts[0] + ":" + parts[1];
-            }
-            host = host + ":" + port;
-        }
+        // Use the provided port or the default
+        port = window.socketio_port || port.toString() || "9000";
+
+        // Construct the host URL with the correct protocol
+        let host = `${protocol}//${hostname}:${port}`;
 
         return host + `/${sitename}`;
     }

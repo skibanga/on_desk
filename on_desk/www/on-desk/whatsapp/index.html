@@ -1862,8 +1862,9 @@
                             // Get the site name from the URL
                             const siteName = window.location.hostname;
 
-                            // Create the socket.io URL
-                            const socketUrl = `http://${window.location.hostname}:${socketioPort}/${siteName}`;
+                            // Create the socket.io URL - use same protocol as the page
+                            const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+                            const socketUrl = `${protocol}//${window.location.hostname}:${socketioPort}/${siteName}`;
                             console.log("Connecting to socket.io at:", socketUrl);
 
                             // Create the socket.io connection
