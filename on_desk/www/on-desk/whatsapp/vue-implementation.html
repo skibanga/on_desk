@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+
+<head>
+    {% include "www/on-desk/includes/head.html" %}
+    
+    <!-- Vue.js CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Socket.io CDN -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+
+    {% block page_css %}
+    <style>
+        /* WhatsApp Integration */
+        .whatsapp-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1.5rem;
+            height: calc(100vh - 200px);
+            min-height: 600px;
+        }
+
+        .whatsapp-card {
+            background-color: var(--bg-card);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            word-break: break-word;
+        }
+
+        .message-incoming {
+            background-color: var(--bg-card);
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+
+        .message-outgoing {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-dark);
+        }
+    </style>
+    {% endblock %}
+</head>
+
+<body>
+    <div class="app-container">
+        {% include "www/on-desk/includes/sidebar.html" %}
+
+        <!-- Main Content -->
+        <div class="main-content">
+            {% include "www/on-desk/includes/header.html" %}
+
+            <h1 class="page-title">WhatsApp Integration (Vue.js)</h1>
+
+            <!-- Vue.js App -->
+            <div id="whatsapp-app">
+                <div class="whatsapp-grid">
+                    <!-- Conversation List -->
+                    <div class="whatsapp-card">
+                        <div class="card-header">
+                            <span>Conversations</span>
+                            <button class="btn-icon" @click="showNewConversationModal = true">
+                                <i class="uil uil-plus"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="conversations.length === 0" class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="uil uil-comment-alt-dots"></i>
+                                </div>
+                                <div class="empty-state-title">No conversations yet</div>
+                                <div class="empty-state-text">Start a new conversation</div>
+                            </div>
+                            <ul v-else class="conversation-list">
+                                <li v-for="conversation in conversations" 
+                                    :key="conversation.phone"
+                                    class="conversation-item"
+                                    :class="{ active: activeConversation?.phone === conversation.phone }"
+                                    @click="selectConversation(conversation)">
+                                    <div class="conversation-avatar">
+                                        {{ conversation.name[0] }}
+                                    </div>
+                                    <div class="conversation-info">
+                                        <div class="conversation-name">{{ conversation.name }}</div>
+                                        <div class="conversation-preview">{{ conversation.lastMessage }}</div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Chat Container -->
+                    <div class="whatsapp-card">
+                        <div class="chat-container">
+                            <div class="chat-header">
+                                <div class="chat-info">
+                                    <div class="chat-name">{{ activeConversation?.name || 'Select a conversation' }}</div>
+                                    <div class="chat-status">{{ connectionStatus }}</div>
+                                </div>
+                                <div class="chat-actions">
+                                    <button class="chat-action-btn" @click="testRealtime" title="Test Real-time">
+                                        <i class="uil uil-wifi"></i>
+                                    </button>
+                                    <button class="chat-action-btn" @click="refreshMessages" title="Refresh">
+                                        <i class="uil uil-sync"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="chat-messages" ref="messagesContainer">
+                                <div v-if="!activeConversation" class="empty-state">
+                                    <div class="empty-state-icon">
+                                        <i class="uil uil-comment-alt"></i>
+                                    </div>
+                                    <div class="empty-state-title">No conversation selected</div>
+                                </div>
+                                <div v-else-if="messages.length === 0" class="empty-state">
+                                    <div class="empty-state-icon">
+                                        <i class="uil uil-comment-alt-message"></i>
+                                    </div>
+                                    <div class="empty-state-title">No messages yet</div>
+                                </div>
+                                <div v-else>
+                                    <div v-for="message in messages" 
+                                         :key="message.message_id"
+                                         class="message"
+                                         :class="message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing'">
+                                        {{ message.message }}
+                                        <div class="message-time">{{ message.time }}</div>
+                                        <div v-if="message.direction === 'Outgoing'" class="message-status">
+                                            <span>{{ message.status }}</span>
+                                            <i :class="getStatusIcon(message.status)"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <form class="chat-input" @submit.prevent="sendMessage">
+                                <input v-model="newMessage" 
+                                       type="text" 
+                                       placeholder="Type a message..."
+                                       :disabled="!activeConversation || sending">
+                                <button type="submit" 
+                                        :disabled="!activeConversation || !newMessage.trim() || sending">
+                                    <i v-if="sending" class="uil uil-spinner-alt fa-spin"></i>
+                                    <i v-else class="uil uil-message"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include "www/on-desk/includes/scripts.html" %}
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    conversations: [],
+                    messages: [],
+                    activeConversation: null,
+                    newMessage: '',
+                    sending: false,
+                    connectionStatus: 'Connecting...',
+                    socket: null,
+                    showNewConversationModal: false
+                };
+            },
+            mounted() {
+                this.initializeApp();
+            },
+            methods: {
+                async initializeApp() {
+                    console.log('Initializing Vue.js WhatsApp app...');
+                    
+                    // Wait for frappe to be loaded
+                    await this.waitForFrappe();
+                    
+                    // Set up real-time connection
+                    this.setupRealtime();
+                    
+                    // Load initial data
+                    this.loadConversations();
+                },
+                
+                waitForFrappe() {
+                    return new Promise((resolve) => {
+                        if (typeof frappe !== 'undefined' && frappe.call) {
+                            resolve();
+                        } else {
+                            document.addEventListener('frappe_loaded', resolve, { once: true });
+                        }
+                    });
+                },
+                
+                setupRealtime() {
+                    console.log('Setting up real-time connection...');
+                    
+                    // Try to use frappe.realtime first
+                    if (typeof frappe !== 'undefined' && frappe.realtime) {
+                        this.setupFrappeRealtime();
+                    } else {
+                        this.setupDirectSocketIO();
+                    }
+                },
+                
+                setupFrappeRealtime() {
+                    console.log('Using frappe.realtime');
+                    
+                    frappe.realtime.on('whatsapp_message_received', (data) => {
+                        console.log('Message received:', data);
+                        this.handleIncomingMessage(data);
+                    });
+                    
+                    frappe.realtime.on('whatsapp_message_sent', (data) => {
+                        console.log('Message sent:', data);
+                        this.handleSentMessage(data);
+                    });
+                    
+                    frappe.realtime.on('whatsapp_test_event', (data) => {
+                        console.log('Test event received:', data);
+                        alert('Real-time test event received: ' + data.message);
+                    });
+                    
+                    this.connectionStatus = 'Connected (Frappe)';
+                },
+                
+                setupDirectSocketIO() {
+                    console.log('Using direct socket.io connection');
+                    
+                    const socketUrl = `http://${window.location.hostname}:9000/${window.location.hostname}`;
+                    this.socket = io(socketUrl, {
+                        withCredentials: true,
+                        reconnectionAttempts: 5
+                    });
+                    
+                    this.socket.on('connect', () => {
+                        console.log('Socket.io connected');
+                        this.connectionStatus = 'Connected (Socket.io)';
+                    });
+                    
+                    this.socket.on('whatsapp_message_received', (data) => {
+                        this.handleIncomingMessage(data);
+                    });
+                    
+                    this.socket.on('whatsapp_message_sent', (data) => {
+                        this.handleSentMessage(data);
+                    });
+                    
+                    this.socket.on('disconnect', () => {
+                        this.connectionStatus = 'Disconnected';
+                    });
+                },
+                
+                handleIncomingMessage(data) {
+                    // Refresh messages if it's for the active conversation
+                    if (this.activeConversation && data.from_number === this.activeConversation.phone) {
+                        this.loadMessages();
+                    }
+                    this.loadConversations();
+                },
+                
+                handleSentMessage(data) {
+                    // Refresh messages if it's for the active conversation
+                    if (this.activeConversation && data.phone_number === this.activeConversation.phone) {
+                        this.loadMessages();
+                    }
+                    this.loadConversations();
+                },
+                
+                async loadConversations() {
+                    try {
+                        const response = await this.frappeCall('on_desk.www.on-desk.whatsapp.api.get_conversations');
+                        this.conversations = response.message || [];
+                    } catch (error) {
+                        console.error('Error loading conversations:', error);
+                    }
+                },
+                
+                async selectConversation(conversation) {
+                    this.activeConversation = conversation;
+                    await this.loadMessages();
+                },
+                
+                async loadMessages() {
+                    if (!this.activeConversation) return;
+                    
+                    try {
+                        const response = await this.frappeCall('on_desk.www.on-desk.whatsapp.api.get_conversation_messages', {
+                            phone_number: this.activeConversation.phone
+                        });
+                        this.messages = response.message || [];
+                        this.$nextTick(() => {
+                            this.scrollToBottom();
+                        });
+                    } catch (error) {
+                        console.error('Error loading messages:', error);
+                    }
+                },
+                
+                async sendMessage() {
+                    if (!this.activeConversation || !this.newMessage.trim()) return;
+                    
+                    this.sending = true;
+                    try {
+                        await this.frappeCall('on_desk.www.on-desk.whatsapp.api.send_message', {
+                            phone_number: this.activeConversation.phone,
+                            message: this.newMessage
+                        });
+                        this.newMessage = '';
+                        await this.loadMessages();
+                    } catch (error) {
+                        console.error('Error sending message:', error);
+                        alert('Error sending message: ' + error.message);
+                    } finally {
+                        this.sending = false;
+                    }
+                },
+                
+                async testRealtime() {
+                    try {
+                        await this.frappeCall('on_desk.www.on-desk.whatsapp.api.test_realtime');
+                        console.log('Test realtime event triggered');
+                    } catch (error) {
+                        console.error('Error testing realtime:', error);
+                        alert('Error testing realtime: ' + error.message);
+                    }
+                },
+                
+                refreshMessages() {
+                    this.loadMessages();
+                },
+                
+                getStatusIcon(status) {
+                    const icons = {
+                        'Sent': 'uil uil-check status-icon status-sent',
+                        'Delivered': 'uil uil-check-double status-icon status-delivered',
+                        'Read': 'uil uil-check-double status-icon status-read',
+                        'Failed': 'uil uil-times status-icon status-failed'
+                    };
+                    return icons[status] || 'uil uil-spinner-alt status-icon';
+                },
+                
+                scrollToBottom() {
+                    const container = this.$refs.messagesContainer;
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                },
+                
+                frappeCall(method, args = {}) {
+                    return new Promise((resolve, reject) => {
+                        frappe.call({
+                            method: method,
+                            args: args,
+                            callback: function(response) {
+                                resolve(response);
+                            },
+                            error: function(error) {
+                                reject(error);
+                            }
+                        });
+                    });
+                }
+            }
+        }).mount('#whatsapp-app');
+    </script>
+</body>
+
+</html>

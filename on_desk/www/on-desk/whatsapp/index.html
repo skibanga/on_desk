@@ -4,8 +4,20 @@
 <head>
     {% include "www/on-desk/includes/head.html" %}
 
-    <!-- Load Frappe realtime client -->
-    <script src="/assets/frappe/js/frappe/socketio_client.js"></script>
+    <!-- Option 1: Load socketio_client as ES6 module -->
+    <script type="module">
+        import('/assets/frappe/js/frappe/socketio_client.js').then(() => {
+            console.log('socketio_client loaded as module');
+            // Dispatch event to indicate realtime is ready
+            document.dispatchEvent(new Event('frappe_realtime_ready'));
+        }).catch(err => {
+            console.warn('Failed to load socketio_client as module:', err);
+        });
+    </script>
+
+    <!-- Option 2: Use Vue.js CDN for modern frontend (alternative approach) -->
+    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+    <!-- <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script> -->
 
     {% block page_css %}
     <style>
@@ -1002,12 +1014,6 @@
 
             // Function to initialize WhatsApp functionality
             function initializeWhatsApp() {
-                // Initialize frappe.realtime if not already initialized
-                if (typeof frappe !== 'undefined' && frappe.realtime && !frappe.realtime.socket) {
-                    console.log("Initializing frappe.realtime...");
-                    frappe.realtime.init();
-                }
-
                 // Check if WhatsApp integration is configured
                 console.log('Checking WhatsApp integration configuration...');
                 $.ajax({
@@ -1834,14 +1840,9 @@
                     }
                 }
 
-                // Set up real-time updates using frappe.realtime
+                // Set up real-time updates - simplified approach
                 function setupRealtimeEvents() {
                     console.log("Setting up real-time event listeners for WhatsApp...");
-
-                    // Add debug info to the console
-                    console.log("Debug info:");
-                    console.log("- frappe defined:", typeof frappe !== 'undefined');
-                    console.log("- frappe.realtime available:", typeof frappe !== 'undefined' && frappe.realtime ? 'Yes' : 'No');
 
                     // Helper function to update message status in the UI
                     function updateMessageStatus(data) {
@@ -1874,14 +1875,17 @@
                         }
                     }
 
-                    // Wait for frappe to be loaded
-                    function waitForFrappe() {
-                        if (typeof frappe !== 'undefined' && frappe.realtime && !frappe._isTemporaryFrappe) {
-                            console.log("Using frappe.realtime for WhatsApp event listening");
+                    // Function to set up real-time events when frappe is ready
+                    function setupEvents() {
+                        console.log("Setting up WhatsApp real-time events...");
+
+                        // Check if frappe.realtime is available
+                        if (typeof frappe !== 'undefined' && frappe.realtime && typeof frappe.realtime.on === 'function') {
+                            console.log("frappe.realtime is available, setting up event listeners");
 
                             // Listen for WhatsApp messages
                             frappe.realtime.on('whatsapp_message_received', function (data) {
-                                console.log("WhatsApp message received via frappe.realtime:", data);
+                                console.log("WhatsApp message received:", data);
 
                                 // If this message is for the active conversation, refresh the messages
                                 if (activeConversation && data.from_number === activeConversation.phone) {
@@ -1894,15 +1898,13 @@
 
                             // Listen for message status updates
                             frappe.realtime.on('whatsapp_message_status_update', function (data) {
-                                console.log("WhatsApp message status update via frappe.realtime:", data);
-
-                                // If this message is in the current view, update its status
+                                console.log("WhatsApp message status update:", data);
                                 updateMessageStatus(data);
                             });
 
                             // Listen for sent messages
                             frappe.realtime.on('whatsapp_message_sent', function (data) {
-                                console.log("WhatsApp message sent via frappe.realtime:", data);
+                                console.log("WhatsApp message sent:", data);
 
                                 // If this message is for the active conversation, refresh the messages
                                 if (activeConversation && data.phone_number === activeConversation.phone) {
@@ -1915,24 +1917,47 @@
 
                             // Listen for test events
                             frappe.realtime.on('whatsapp_test_event', function (data) {
-                                console.log("WhatsApp test event received via frappe.realtime:", data);
+                                console.log("WhatsApp test event received:", data);
                                 alert("Real-time test event received: " + data.message);
                             });
 
                             console.log("WhatsApp real-time events set up successfully");
+                            return true;
                         } else {
-                            console.log("Waiting for frappe.realtime to be available...");
-                            setTimeout(waitForFrappe, 500);
+                            console.log("frappe.realtime not available yet");
+                            return false;
                         }
                     }
 
-                    // Start waiting for frappe
-                    waitForFrappe();
+                    // Try to set up events immediately
+                    if (!setupEvents()) {
+                        // If not available, wait for frappe to load
+                        let attempts = 0;
+                        const maxAttempts = 20; // 10 seconds max
 
-                    // Also listen for the frappe_loaded event
+                        const checkInterval = setInterval(function () {
+                            attempts++;
+                            console.log(`Attempt ${attempts}/${maxAttempts} to set up real-time events`);
+
+                            if (setupEvents()) {
+                                clearInterval(checkInterval);
+                            } else if (attempts >= maxAttempts) {
+                                console.warn("Failed to set up real-time events after maximum attempts");
+                                clearInterval(checkInterval);
+                            }
+                        }, 500);
+                    }
+
+                    // Also listen for the frappe_loaded event as a backup
                     document.addEventListener('frappe_loaded', function () {
-                        console.log("frappe_loaded event received, setting up real-time events");
-                        setTimeout(waitForFrappe, 100);
+                        console.log("frappe_loaded event received");
+                        setTimeout(setupEvents, 100);
+                    });
+
+                    // Listen for the frappe_realtime_ready event
+                    document.addEventListener('frappe_realtime_ready', function () {
+                        console.log("frappe_realtime_ready event received");
+                        setTimeout(setupEvents, 100);
                     });
                 }
 
