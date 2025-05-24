@@ -4,20 +4,8 @@
 <head>
     {% include "www/on-desk/includes/head.html" %}
 
-    <!-- Option 1: Load socketio_client as ES6 module -->
-    <script type="module">
-        import('/assets/frappe/js/frappe/socketio_client.js').then(() => {
-            console.log('socketio_client loaded as module');
-            // Dispatch event to indicate realtime is ready
-            document.dispatchEvent(new Event('frappe_realtime_ready'));
-        }).catch(err => {
-            console.warn('Failed to load socketio_client as module:', err);
-        });
-    </script>
-
-    <!-- Option 2: Use Vue.js CDN for modern frontend (alternative approach) -->
-    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
-    <!-- <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script> -->
+    <!-- Direct Socket.io CDN approach -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 
     {% block page_css %}
     <style>
@@ -1840,9 +1828,9 @@
                     }
                 }
 
-                // Set up real-time updates - simplified approach
+                // Set up real-time updates using Socket.io CDN
                 function setupRealtimeEvents() {
-                    console.log("Setting up real-time event listeners for WhatsApp...");
+                    console.log("Setting up real-time event listeners for WhatsApp using Socket.io...");
 
                     // Helper function to update message status in the UI
                     function updateMessageStatus(data) {
@@ -1875,17 +1863,59 @@
                         }
                     }
 
-                    // Function to set up real-time events when frappe is ready
+                    // Function to set up real-time events using Socket.io
                     function setupEvents() {
-                        console.log("Setting up WhatsApp real-time events...");
+                        console.log("Setting up WhatsApp real-time events using Socket.io...");
 
-                        // Check if frappe.realtime is available
-                        if (typeof frappe !== 'undefined' && frappe.realtime && typeof frappe.realtime.on === 'function') {
-                            console.log("frappe.realtime is available, setting up event listeners");
+                        // Check if Socket.io is available
+                        if (typeof io === 'undefined') {
+                            console.log("Socket.io not available yet");
+                            return false;
+                        }
 
-                            // Listen for WhatsApp messages
-                            frappe.realtime.on('whatsapp_message_received', function (data) {
-                                console.log("WhatsApp message received:", data);
+                        try {
+                            // Get the site name from the current hostname
+                            const siteName = window.location.hostname;
+
+                            // Connect to the Socket.io server
+                            // Frappe's Socket.io server runs on port 9000 by default
+                            const socketUrl = `http://${siteName}:9000/${siteName}`;
+                            console.log("Connecting to Socket.io server:", socketUrl);
+
+                            const socket = io(socketUrl, {
+                                withCredentials: true,
+                                reconnectionAttempts: 5,
+                                reconnectionDelay: 1000,
+                                timeout: 5000
+                            });
+
+                            socket.on('connect', function () {
+                                console.log('Socket.io connected successfully');
+
+                                // Update chat status
+                                const chatStatusEl = document.querySelector('.chat-status');
+                                if (chatStatusEl) {
+                                    chatStatusEl.textContent = 'Online (Socket.io)';
+                                }
+                            });
+
+                            socket.on('disconnect', function () {
+                                console.log('Socket.io disconnected');
+
+                                // Update chat status
+                                const chatStatusEl = document.querySelector('.chat-status');
+                                if (chatStatusEl) {
+                                    chatStatusEl.textContent = 'Disconnected';
+                                }
+                            });
+
+                            socket.on('connect_error', function (error) {
+                                console.error('Socket.io connection error:', error);
+                            });
+
+                            // Listen for WhatsApp events
+                            socket.on('whatsapp_message_received', function (data) {
+                                console.log("WhatsApp message received via Socket.io:", data);
 
                                 // If this message is for the active conversation, refresh the messages
                                 if (activeConversation && data.from_number === activeConversation.phone) {
@@ -1896,15 +1926,13 @@
                                 refreshConversations();
                             });
 
-                            // Listen for message status updates
-                            frappe.realtime.on('whatsapp_message_status_update', function (data) {
-                                console.log("WhatsApp message status update:", data);
+                            socket.on('whatsapp_message_status_update', function (data) {
+                                console.log("WhatsApp message status update via Socket.io:", data);
                                 updateMessageStatus(data);
                             });
 
-                            // Listen for sent messages
-                            frappe.realtime.on('whatsapp_message_sent', function (data) {
-                                console.log("WhatsApp message sent:", data);
+                            socket.on('whatsapp_message_sent', function (data) {
+                                console.log("WhatsApp message sent via Socket.io:", data);
 
                                 // If this message is for the active conversation, refresh the messages
                                 if (activeConversation && data.phone_number === activeConversation.phone) {
@@ -1915,50 +1943,38 @@
                                 refreshConversations();
                             });
 
-                            // Listen for test events
-                            frappe.realtime.on('whatsapp_test_event', function (data) {
-                                console.log("WhatsApp test event received:", data);
+                            socket.on('whatsapp_test_event', function (data) {
+                                console.log("WhatsApp test event received via Socket.io:", data);
                                 alert("Real-time test event received: " + data.message);
                             });
 
-                            console.log("WhatsApp real-time events set up successfully");
+                            console.log("Socket.io event listeners set up successfully");
                             return true;
-                        } else {
-                            console.log("frappe.realtime not available yet");
+
+                        } catch (error) {
+                            console.error("Error setting up Socket.io:", error);
                             return false;
                         }
                     }
 
                     // Try to set up events immediately
                     if (!setupEvents()) {
-                        // If not available, wait for frappe to load
+                        // If not available, wait for Socket.io to load
                         let attempts = 0;
-                        const maxAttempts = 20; // 10 seconds max
+                        const maxAttempts = 10; // 5 seconds max
 
                         const checkInterval = setInterval(function () {
                             attempts++;
-                            console.log(`Attempt ${attempts}/${maxAttempts} to set up real-time events`);
+                            console.log(`Attempt ${attempts}/${maxAttempts} to set up Socket.io events`);
 
                             if (setupEvents()) {
                                 clearInterval(checkInterval);
                             } else if (attempts >= maxAttempts) {
-                                console.warn("Failed to set up real-time events after maximum attempts");
+                                console.warn("Failed to set up Socket.io events after maximum attempts");
                                 clearInterval(checkInterval);
                             }
                         }, 500);
                     }
-
-                    // Also listen for the frappe_loaded event as a backup
-                    document.addEventListener('frappe_loaded', function () {
-                        console.log("frappe_loaded event received");
-                        setTimeout(setupEvents, 100);
-                    });
-
-                    // Listen for the frappe_realtime_ready event
-                    document.addEventListener('frappe_realtime_ready', function () {
-                        console.log("frappe_realtime_ready event received");
-                        setTimeout(setupEvents, 100);
-                    });
                 }
 
                 // Initialize the UI
