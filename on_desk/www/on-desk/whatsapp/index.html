@@ -261,33 +261,62 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            background-color: var(--bg-dark);
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGZpbGw9IiMxZTI5M2IiIGQ9Ik0wIDBoMjAwdjIwMEgweiIvPjxjaXJjbGUgc3Ryb2tlPSIjMzM0MTU1IiBzdHJva2Utd2lkdGg9Ii41IiBjeD0iMTAwIiBjeT0iMTAwIiByPSI5OS43NSIvPjxwYXRoIGQ9Ik0xMDAgMjAwYzU1LjIyOCAwIDEwMC00NC43NzIgMTAwLTEwMFMxNTUuMjI4IDAgMTAwIDAgMCA0NC43NzIgMCAxMDBzNDQuNzcyIDEwMCAxMDAgMTAwem0wLTVjNTIuNDY3IDAgOTUtNDIuNTMzIDk1LTk1UzE1Mi40NjcgNSAxMDAgNSA1IDQ3LjUzMyA1IDEwMHM0Mi41MzMgOTUgOTUgOTV6IiBmaWxsPSIjMzM0MTU1IiBmaWxsLXJ1bGU9Im5vbnplcm8iLz48Y2lyY2xlIHN0cm9rZT0iIzMzNDE1NSIgc3Ryb2tlLXdpZHRoPSIuNSIgY3g9IjEwMCIgY3k9IjEwMCIgcj0iNjkuNzUiLz48cGF0aCBkPSJNMTAwIDE3MGMzOC42NiAwIDcwLTMxLjM0IDcwLTcwcy0zMS4zNC03MC03MC03MFMzMCA2MS4zNCAzMCAxMDBzMzEuMzQgNzAgNzAgNzB6bTAtNWMzNS44OTggMCA2NS0yOS4xMDIgNjUtNjVzLTI5LjEwMi02NS02NS02NS02NSAyOS4xMDItNjUgNjUgMjkuMTAyIDY1IDY1IDY1eiIgZmlsbD0iIzMzNDE1NSIgZmlsbC1ydWxlPSJub256ZXJvIi8+PC9nPjwvc3ZnPg==');
-            background-size: cover;
-            background-position: center;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.05) 0%, transparent 50%);
+            position: relative;
+        }
+
+        .chat-messages::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml;utf8,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.02"><circle cx="30" cy="30" r="1"/></g></g></svg>');
+            background-repeat: repeat;
+            pointer-events: none;
         }
 
         .message {
             max-width: 70%;
             padding: 0.75rem 1rem;
-            border-radius: 0.75rem;
-            margin-bottom: 1rem;
+            border-radius: 1rem;
+            margin-bottom: 0.5rem;
             position: relative;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             word-break: break-word;
+            animation: messageSlideIn 0.3s ease-out;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message-incoming {
-            background-color: var(--bg-card);
+            background-color: #2d3748;
+            color: #e2e8f0;
             align-self: flex-start;
-            border-bottom-left-radius: 0;
+            border-bottom-left-radius: 0.25rem;
         }
 
         .message-outgoing {
-            background-color: var(--primary-light);
-            color: var(--primary-color);
+            background-color: #25D366;
+            /* WhatsApp green */
+            color: white;
             align-self: flex-end;
-            border-bottom-right-radius: 0;
+            border-bottom-right-radius: 0.25rem;
         }
 
         .message-time {
@@ -295,6 +324,10 @@
             color: var(--text-light);
             margin-top: 0.25rem;
             text-align: right;
+        }
+
+        .message-outgoing .message-time {
+            color: rgba(255, 255, 255, 0.8);
         }
 
         .message-status {
@@ -305,6 +338,10 @@
             display: flex;
             justify-content: flex-end;
             align-items: center;
+        }
+
+        .message-outgoing .message-status {
+            color: rgba(255, 255, 255, 0.8);
         }
 
         .status-icon {
@@ -749,8 +786,6 @@
         <!-- Main Content -->
         <div class="main-content">
             {% include "www/on-desk/includes/header.html" %}
-
-            <h1 class="page-title">WhatsApp Integration</h1>
 
             <div class="whatsapp-grid">
                 <!-- Conversation List -->
