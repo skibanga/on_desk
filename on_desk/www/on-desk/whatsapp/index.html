@@ -1873,32 +1873,43 @@
                             return false;
                         }
 
-                        try {
-                            // Get the site name from the current hostname
-                            const siteName = window.location.hostname;
+                        // Function to try connecting with different configurations
+                        function tryConnection(socketUrl, options, fallbackCallback) {
+                            console.log("Attempting connection to:", socketUrl);
 
-                            // Connect to the Socket.io server
-                            // Frappe's Socket.io server runs on port 9000 by default
-                            const socketUrl = `http://${siteName}:9000/${siteName}`;
-                            console.log("Connecting to Socket.io server:", socketUrl);
+                            const socket = io(socketUrl, options);
 
-                            const socket = io(socketUrl, {
-                                withCredentials: true,
-                                reconnectionAttempts: 5,
-                                reconnectionDelay: 1000,
-                                timeout: 5000
-                            });
+                            // Set a timeout for connection attempt
+                            const connectionTimeout = setTimeout(() => {
+                                console.log("Connection timeout, trying fallback...");
+                                socket.disconnect();
+                                if (fallbackCallback) fallbackCallback();
+                            }, 10000); // 10 second timeout
 
                             socket.on('connect', function () {
-                                console.log('Socket.io connected successfully');
+                                clearTimeout(connectionTimeout);
+                                console.log('Socket.io connected successfully to:', socketUrl);
 
                                 // Update chat status
                                 const chatStatusEl = document.querySelector('.chat-status');
                                 if (chatStatusEl) {
                                     chatStatusEl.textContent = 'Online (Socket.io)';
                                 }
+
+                                setupSocketEvents(socket);
                             });
 
+                            socket.on('connect_error', function (error) {
+                                clearTimeout(connectionTimeout);
+                                console.error('Socket.io connection error:', error);
+                                if (fallbackCallback) fallbackCallback();
+                            });
+
+                            return socket;
+                        }
+
+                        // Function to set up socket event listeners
+                        function setupSocketEvents(socket) {
                             socket.on('disconnect', function () {
                                 console.log('Socket.io disconnected');
 
@@ -1907,10 +1918,6 @@
                                 if (chatStatusEl) {
                                     chatStatusEl.textContent = 'Disconnected';
                                 }
-                            });
-
-                            socket.on('connect_error', function (error) {
-                                console.error('Socket.io connection error:', error);
                             });
 
                             // Listen for WhatsApp events
@@ -1949,6 +1956,74 @@
                             });
 
                             console.log("Socket.io event listeners set up successfully");
+                        }
+
+                        try {
+                            // Get the site name from the current hostname
+                            const siteName = window.location.hostname;
+                            const isHttps = window.location.protocol === 'https:';
+
+                            // Try different connection methods based on protocol
+                            if (isHttps) {
+                                // For HTTPS sites, try multiple approaches
+
+                                // 1. Try proxied connection through main domain (requires Nginx config)
+                                const proxiedUrl = `https://${siteName}/${siteName}`;
+                                tryConnection(proxiedUrl, {
+                                    withCredentials: true,
+                                    reconnectionAttempts: 3,
+                                    reconnectionDelay: 1000,
+                                    timeout: 5000,
+                                    secure: true,
+                                    path: '/socket.io/'
+                                }, function () {
+                                    // 2. Try direct HTTPS on port 9000 (requires SSL config)
+                                    console.log("Proxied connection failed, trying direct HTTPS...");
+                                    const httpsUrl = `https://${siteName}:9000/${siteName}`;
+                                    tryConnection(httpsUrl, {
+                                        withCredentials: true,
+                                        reconnectionAttempts: 3,
+                                        reconnectionDelay: 1000,
+                                        timeout: 5000,
+                                        secure: true,
+                                        rejectUnauthorized: false
+                                    }, function () {
+                                        // 3. Last resort: Try HTTP (will fail due to mixed content)
+                                        console.log("HTTPS connection failed, trying HTTP (will likely fail due to mixed content)...");
+                                        const httpUrl = `http://${siteName}:9000/${siteName}`;
+                                        tryConnection(httpUrl, {
+                                            withCredentials: true,
+                                            reconnectionAttempts: 1,
+                                            reconnectionDelay: 1000,
+                                            timeout: 3000,
+                                            secure: false
+                                        }, function () {
+                                            console.warn("All Socket.io connection attempts failed");
+                                            const chatStatusEl = document.querySelector('.chat-status');
+                                            if (chatStatusEl) {
+                                                chatStatusEl.textContent = 'Connection Failed - SSL Required';
+                                            }
+                                        });
+                                    });
+                                });
+                            } else {
+                                // For HTTP sites, try HTTP connection
+                                const httpUrl = `http://${siteName}:9000/${siteName}`;
+                                tryConnection(httpUrl, {
+                                    withCredentials: true,
+                                    reconnectionAttempts: 5,
+                                    reconnectionDelay: 1000,
+                                    timeout: 5000,
+                                    secure: false
+                                }, function () {
+                                    console.warn("HTTP Socket.io connection failed");
+                                    const chatStatusEl = document.querySelector('.chat-status');
+                                    if (chatStatusEl) {
+                                        chatStatusEl.textContent = 'Connection Failed';
+                                    }
+                                });
+                            }
+
                             return true;
 
                         } catch (error) {
