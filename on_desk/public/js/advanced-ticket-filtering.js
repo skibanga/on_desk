@@ -115,37 +115,66 @@ class AdvancedTicketFilter {
 
     async loadFilterOptions() {
         try {
+            console.log('Loading filter options...');
+
             const response = await frappe.call({
                 method: 'on_desk.api.get_filter_options'
             });
 
-            if (response && response.message && response.message.success) {
-                const options = response.message.options;
+            console.log('Filter options response:', response);
+
+            // Handle null/undefined response
+            if (!response) {
+                console.warn('Filter options response is null or undefined');
+                this.useDefaultFilterOptions();
+                return;
+            }
+
+            // Handle response without message property
+            if (!response.hasOwnProperty('message')) {
+                console.warn('Filter options response does not have message property:', response);
+                this.useDefaultFilterOptions();
+                return;
+            }
+
+            // Handle response with null message
+            if (!response.message) {
+                console.warn('Filter options response message is null:', response);
+                this.useDefaultFilterOptions();
+                return;
+            }
+
+            // Handle response without success property
+            if (!response.message.hasOwnProperty('success')) {
+                console.warn('Filter options response message does not have success property:', response.message);
+                this.useDefaultFilterOptions();
+                return;
+            }
+
+            if (response.message.success) {
+                const options = response.message.options || {};
                 this.populateFilterOptions(options);
             } else {
-                console.warn('Invalid response from get_filter_options:', response);
-                // Use default empty options
-                this.populateFilterOptions({
-                    statuses: [{ "name": "All", "label": "All Statuses" }],
-                    priorities: [{ "name": "All", "label": "All Priorities" }],
-                    agent_groups: [{ "name": "All", "label": "All Teams" }],
-                    ticket_types: [{ "name": "All", "label": "All Types" }],
-                    customers: [{ "name": "All", "label": "All Customers" }],
-                    agents: [{ "name": "All", "label": "All Agents" }],
-                });
+                console.warn('Filter options API returned success=false:', response.message);
+                this.useDefaultFilterOptions();
             }
         } catch (error) {
             console.error('Error loading filter options:', error);
-            // Use default empty options on error
-            this.populateFilterOptions({
-                statuses: [{ "name": "All", "label": "All Statuses" }],
-                priorities: [{ "name": "All", "label": "All Priorities" }],
-                agent_groups: [{ "name": "All", "label": "All Teams" }],
-                ticket_types: [{ "name": "All", "label": "All Types" }],
-                customers: [{ "name": "All", "label": "All Customers" }],
-                agents: [{ "name": "All", "label": "All Agents" }],
-            });
+            console.error('Error stack:', error.stack);
+            this.useDefaultFilterOptions();
         }
+    }
+
+    useDefaultFilterOptions() {
+        console.log('Using default filter options');
+        this.populateFilterOptions({
+            statuses: [{ "name": "All", "label": "All Statuses" }],
+            priorities: [{ "name": "All", "label": "All Priorities" }],
+            agent_groups: [{ "name": "All", "label": "All Teams" }],
+            ticket_types: [{ "name": "All", "label": "All Types" }],
+            customers: [{ "name": "All", "label": "All Customers" }],
+            agents: [{ "name": "All", "label": "All Agents" }],
+        });
     }
 
     populateFilterOptions(options) {
@@ -239,6 +268,15 @@ class AdvancedTicketFilter {
             const sortBy = this.sortBy ? this.sortBy.value : 'modified';
             const sortOrder = this.sortOrder ? this.sortOrder.value : 'desc';
 
+            console.log('Making API call with:', {
+                filters: JSON.stringify(filters),
+                search_text: searchText,
+                sort_by: sortBy,
+                sort_order: sortOrder,
+                page: this.currentPage,
+                page_size: this.pageSize
+            });
+
             const response = await frappe.call({
                 method: 'on_desk.api.get_tickets_advanced',
                 args: {
@@ -251,7 +289,30 @@ class AdvancedTicketFilter {
                 }
             });
 
-            if (response && response.message && response.message.success) {
+            console.log('API response:', response);
+
+            // Handle different response structures
+            if (!response) {
+                console.warn('Response is null or undefined');
+                this.showError('No response from server');
+                return;
+            }
+
+            // Check if response has message property
+            if (!response.hasOwnProperty('message')) {
+                console.warn('Response does not have message property:', response);
+                this.showError('Invalid response format from server');
+                return;
+            }
+
+            // Check if message has success property
+            if (!response.message || !response.message.hasOwnProperty('success')) {
+                console.warn('Response message does not have success property:', response.message);
+                this.showError('Invalid response format from server');
+                return;
+            }
+
+            if (response.message.success) {
                 const data = response.message;
                 this.totalCount = data.total_count || 0;
                 this.totalPages = data.total_pages || 1;
@@ -259,13 +320,12 @@ class AdvancedTicketFilter {
                 this.renderPagination();
                 this.updateResultsInfo();
             } else {
-                const errorMessage = (response && response.message && response.message.message)
-                    ? response.message.message
-                    : 'Failed to load tickets';
+                const errorMessage = response.message.message || 'Failed to load tickets';
                 this.showError(errorMessage);
             }
         } catch (error) {
             console.error('Error loading tickets:', error);
+            console.error('Error stack:', error.stack);
             this.showError('Failed to load tickets: ' + (error.message || 'Unknown error'));
         } finally {
             this.isLoading = false;
@@ -533,18 +593,51 @@ class AdvancedTicketFilter {
 
     async loadFilterPresets() {
         try {
+            console.log('Loading filter presets...');
+
             const response = await frappe.call({
                 method: 'on_desk.api.get_filter_presets'
             });
 
-            if (response && response.message && response.message.success) {
+            console.log('Filter presets response:', response);
+
+            // Handle null/undefined response
+            if (!response) {
+                console.warn('Filter presets response is null or undefined');
+                this.renderFilterPresets([]);
+                return;
+            }
+
+            // Handle response without message property
+            if (!response.hasOwnProperty('message')) {
+                console.warn('Filter presets response does not have message property:', response);
+                this.renderFilterPresets([]);
+                return;
+            }
+
+            // Handle response with null message
+            if (!response.message) {
+                console.warn('Filter presets response message is null:', response);
+                this.renderFilterPresets([]);
+                return;
+            }
+
+            // Handle response without success property
+            if (!response.message.hasOwnProperty('success')) {
+                console.warn('Filter presets response message does not have success property:', response.message);
+                this.renderFilterPresets([]);
+                return;
+            }
+
+            if (response.message.success) {
                 this.renderFilterPresets(response.message.presets || []);
             } else {
-                console.warn('Invalid response from get_filter_presets:', response);
+                console.warn('Filter presets API returned success=false:', response.message);
                 this.renderFilterPresets([]);
             }
         } catch (error) {
             console.error('Error loading filter presets:', error);
+            console.error('Error stack:', error.stack);
             this.renderFilterPresets([]);
         }
     }
