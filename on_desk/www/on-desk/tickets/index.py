@@ -41,28 +41,60 @@ def get_context(context):
     context.current_page = "tickets"
     context.page_title = "Tickets"
 
-    # Get tickets
-    context.tickets = get_tickets()
+    # Check if we should use advanced filtering
+    use_advanced = frappe.form_dict.get("advanced", "0") == "1"
 
-    # Get ticket statuses for filtering
-    context.statuses = get_ticket_statuses()
+    if use_advanced:
+        # Use new advanced filtering system
+        context.use_advanced_filtering = True
+        context.tickets = []  # Will be loaded via AJAX
+        context.filter_options = get_filter_options_for_context()
+    else:
+        # Use legacy filtering for backward compatibility
+        context.use_advanced_filtering = False
 
-    # Get ticket priorities for filtering
-    context.priorities = get_ticket_priorities()
+        # Get tickets
+        context.tickets = get_tickets()
 
-    # Default filters
-    context.current_filter = frappe.form_dict.get("status", "All")
+        # Get ticket statuses for filtering
+        context.statuses = get_ticket_statuses()
 
-    # Apply filters if provided
-    if context.current_filter != "All":
-        context.tickets = [
-            t for t in context.tickets if t.status == context.current_filter
-        ]
+        # Get ticket priorities for filtering
+        context.priorities = get_ticket_priorities()
 
-    # Sort tickets by creation date (newest first)
-    context.tickets.sort(key=lambda x: x.creation, reverse=True)
+        # Default filters
+        context.current_filter = frappe.form_dict.get("status", "All")
+
+        # Apply filters if provided
+        if context.current_filter != "All":
+            context.tickets = [
+                t for t in context.tickets if t.status == context.current_filter
+            ]
+
+        # Sort tickets by creation date (newest first)
+        context.tickets.sort(key=lambda x: x.creation, reverse=True)
 
     return context
+
+
+def get_filter_options_for_context():
+    """Get filter options for the frontend context"""
+    try:
+        from on_desk.api import get_filter_options
+
+        result = get_filter_options()
+        if result.get("success"):
+            return result.get("options", {})
+        return {}
+    except Exception:
+        return {
+            "statuses": [{"name": "All", "label": "All Statuses"}],
+            "priorities": [{"name": "All", "label": "All Priorities"}],
+            "agent_groups": [{"name": "All", "label": "All Teams"}],
+            "ticket_types": [{"name": "All", "label": "All Types"}],
+            "customers": [{"name": "All", "label": "All Customers"}],
+            "agents": [{"name": "All", "label": "All Agents"}],
+        }
 
 
 def get_tickets():
