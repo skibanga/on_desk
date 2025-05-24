@@ -4,6 +4,9 @@
 <head>
     {% include "www/on-desk/includes/head.html" %}
 
+    <!-- Direct Socket.io CDN approach -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+
     {% block page_css %}
     <style>
         /* WhatsApp Integration */
@@ -826,6 +829,9 @@
                                     active conversation" }}</div>
                             </div>
                             <div class="chat-actions">
+                                <button class="chat-action-btn" title="Test Real-time Events" id="test-realtime-btn">
+                                    <i class="uil uil-wifi"></i>
+                                </button>
                                 <button class="chat-action-btn" title="Test API Connection" id="test-api-btn">
                                     <i class="uil uil-bolt"></i>
                                 </button>
@@ -1169,50 +1175,125 @@
                     console.log('Adding message elements');
                     messages.forEach(message => {
                         console.log('Processing message:', message);
-
-                        const messageElement = document.createElement('div');
-                        messageElement.classList.add('message');
-                        messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
-                        messageElement.dataset.messageId = message.message_id;
-
-                        let messageContent = `
-                        ${message.message}
-                        <div class="message-time">${message.time}</div>
-                    `;
-
-                        if (message.direction === 'Outgoing') {
-                            let statusIcon = '';
-                            let statusClass = '';
-
-                            if (message.status === 'Sent') {
-                                statusIcon = 'uil-check';
-                                statusClass = 'status-sent';
-                            } else if (message.status === 'Delivered') {
-                                statusIcon = 'uil-check-double';
-                                statusClass = 'status-delivered';
-                            } else if (message.status === 'Read') {
-                                statusIcon = 'uil-check-double';
-                                statusClass = 'status-read';
-                            } else if (message.status === 'Failed') {
-                                statusIcon = 'uil-times';
-                                statusClass = 'status-failed';
-                            }
-
-                            messageContent += `
-                            <div class="message-status">
-                                <span>${message.status}</span>
-                                <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
-                            </div>
-                        `;
-                        }
-
-                        messageElement.innerHTML = messageContent;
-                        messagesContainer.appendChild(messageElement);
+                        addMessageElementToContainer(message, messagesContainer);
                     });
 
                     console.log('Scrolling to bottom');
                     // Scroll to bottom
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+
+                // Helper function to create a message element
+                function addMessageElementToContainer(message, container) {
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('message');
+                    messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
+                    messageElement.dataset.messageId = message.message_id;
+
+                    let messageContent = `
+                        ${message.message}
+                        <div class="message-time">${message.time}</div>
+                    `;
+
+                    if (message.direction === 'Outgoing') {
+                        let statusIcon = '';
+                        let statusClass = '';
+
+                        if (message.status === 'Sent') {
+                            statusIcon = 'uil-check';
+                            statusClass = 'status-sent';
+                        } else if (message.status === 'Delivered') {
+                            statusIcon = 'uil-check-double';
+                            statusClass = 'status-delivered';
+                        } else if (message.status === 'Read') {
+                            statusIcon = 'uil-check-double';
+                            statusClass = 'status-read';
+                        } else if (message.status === 'Failed') {
+                            statusIcon = 'uil-times';
+                            statusClass = 'status-failed';
+                        }
+
+                        messageContent += `
+                            <div class="message-status">
+                                <span>${message.status}</span>
+                                <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
+                            </div>
+                        `;
+                    }
+
+                    messageElement.innerHTML = messageContent;
+                    container.appendChild(messageElement);
+                }
+
+                // Function to add a single message to the UI instantly
+                function addMessageToUI(message) {
+                    console.log('Adding message to UI instantly:', message);
+
+                    const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
+                    if (!messagesContainer) {
+                        console.error('Messages container not found');
+                        return;
+                    }
+
+                    // Check if message already exists (avoid duplicates)
+                    const existingMessage = messagesContainer.querySelector(`[data-message-id="${message.message_id}"]`);
+                    if (existingMessage) {
+                        console.log('Message already exists, skipping');
+                        return;
+                    }
+
+                    // Remove empty state if it exists
+                    const emptyState = messagesContainer.querySelector('.empty-state');
+                    if (emptyState) {
+                        emptyState.remove();
+
+                        // Add date divider if this is the first message
+                        const dateDivider = document.createElement('div');
+                        dateDivider.classList.add('date-divider');
+                        dateDivider.textContent = 'Today';
+                        messagesContainer.appendChild(dateDivider);
+                    }
+
+                    // Add the new message
+                    addMessageElementToContainer(message, messagesContainer);
+
+                    // Scroll to bottom with smooth animation
+                    messagesContainer.scrollTo({
+                        top: messagesContainer.scrollHeight,
+                        behavior: 'smooth'
+                    });
+
+                    // Add a subtle animation to the new message
+                    const newMessageElement = messagesContainer.querySelector(`[data-message-id="${message.message_id}"]`);
+                    if (newMessageElement) {
+                        newMessageElement.style.opacity = '0';
+                        newMessageElement.style.transform = 'translateY(20px)';
+
+                        setTimeout(() => {
+                            newMessageElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                            newMessageElement.style.opacity = '1';
+                            newMessageElement.style.transform = 'translateY(0)';
+                        }, 50);
+                    }
+                }
+
+                // Function to format timestamp
+                function formatTimestamp(timestamp) {
+                    if (!timestamp) return 'Just now';
+
+                    // Handle Unix timestamp (seconds)
+                    if (typeof timestamp === 'number' || (typeof timestamp === 'string' && /^\d+$/.test(timestamp))) {
+                        const date = new Date(parseInt(timestamp) * 1000);
+                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    }
+
+                    // Handle ISO string or other formats
+                    try {
+                        const date = new Date(timestamp);
+                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    } catch (e) {
+                        return 'Just now';
+                    }
                 }
 
                 // Function to send a message
@@ -1794,10 +1875,285 @@
                             }
                         });
                     }
+
+                    // Add test realtime button handler
+                    const testRealtimeBtn = document.querySelector('#test-realtime-btn');
+                    if (testRealtimeBtn) {
+                        testRealtimeBtn.addEventListener('click', function () {
+                            console.log('Test realtime button clicked');
+
+                            // Call the test realtime API
+                            frappe.call({
+                                method: 'on_desk.www.on-desk.whatsapp.api.test_realtime',
+                                callback: function (response) {
+                                    console.log('Test realtime API response:', response);
+                                    if (response.message && response.message.success) {
+                                        console.log('Test realtime event published successfully');
+                                    } else {
+                                        console.error('Test realtime event failed:', response.message);
+                                        alert('Test realtime event failed: ' + (response.message.message || 'Unknown error'));
+                                    }
+                                },
+                                error: function (err) {
+                                    console.error('Error calling test realtime API:', err);
+                                    alert('Error calling test realtime API: ' + err.message);
+                                }
+                            });
+                        });
+                    }
+                }
+
+                // Set up real-time updates using Socket.io CDN
+                function setupRealtimeEvents() {
+                    console.log("Setting up real-time event listeners for WhatsApp using Socket.io...");
+
+                    // Helper function to update message status in the UI
+                    function updateMessageStatus(data) {
+                        const messageEl = document.querySelector(`[data-message-id="${data.message_id}"]`);
+                        if (messageEl) {
+                            const statusEl = messageEl.querySelector('.message-status');
+                            if (statusEl) {
+                                let statusIcon = '';
+                                let statusClass = '';
+
+                                if (data.status === 'Sent') {
+                                    statusIcon = 'uil-check';
+                                    statusClass = 'status-sent';
+                                } else if (data.status === 'Delivered') {
+                                    statusIcon = 'uil-check-double';
+                                    statusClass = 'status-delivered';
+                                } else if (data.status === 'Read') {
+                                    statusIcon = 'uil-check-double';
+                                    statusClass = 'status-read';
+                                } else if (data.status === 'Failed') {
+                                    statusIcon = 'uil-times';
+                                    statusClass = 'status-failed';
+                                }
+
+                                statusEl.innerHTML = `
+                                    <span>${data.status}</span>
+                                    <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
+                                `;
+                            }
+                        }
+                    }
+
+                    // Function to set up real-time events using Socket.io
+                    function setupEvents() {
+                        console.log("Setting up WhatsApp real-time events using Socket.io...");
+
+                        // Check if Socket.io is available
+                        if (typeof io === 'undefined') {
+                            console.log("Socket.io not available yet");
+                            return false;
+                        }
+
+                        // Function to try connecting with different configurations
+                        function tryConnection(socketUrl, options, fallbackCallback) {
+                            console.log("Attempting connection to:", socketUrl);
+
+                            const socket = io(socketUrl, options);
+
+                            // Set a timeout for connection attempt
+                            const connectionTimeout = setTimeout(() => {
+                                console.log("Connection timeout, trying fallback...");
+                                socket.disconnect();
+                                if (fallbackCallback) fallbackCallback();
+                            }, 10000); // 10 second timeout
+
+                            socket.on('connect', function () {
+                                clearTimeout(connectionTimeout);
+                                console.log('Socket.io connected successfully to:', socketUrl);
+
+                                // Update chat status
+                                const chatStatusEl = document.querySelector('.chat-status');
+                                if (chatStatusEl) {
+                                    chatStatusEl.textContent = 'Online (Socket.io)';
+                                }
+
+                                setupSocketEvents(socket);
+                            });
+
+                            socket.on('connect_error', function (error) {
+                                clearTimeout(connectionTimeout);
+                                console.error('Socket.io connection error:', error);
+                                if (fallbackCallback) fallbackCallback();
+                            });
+
+                            return socket;
+                        }
+
+                        // Function to set up socket event listeners
+                        function setupSocketEvents(socket) {
+                            socket.on('disconnect', function () {
+                                console.log('Socket.io disconnected');
+
+                                // Update chat status
+                                const chatStatusEl = document.querySelector('.chat-status');
+                                if (chatStatusEl) {
+                                    chatStatusEl.textContent = 'Disconnected';
+                                }
+                            });
+
+                            // Listen for WhatsApp events
+                            socket.on('whatsapp_message_received', function (data) {
+                                console.log("WhatsApp message received via Socket.io:", data);
+
+                                // If this message is for the active conversation, add it instantly to the UI
+                                if (activeConversation && data.from_number === activeConversation.phone) {
+                                    addMessageToUI({
+                                        message_id: data.message_id,
+                                        message: data.message,
+                                        direction: 'Incoming',
+                                        time: formatTimestamp(data.timestamp),
+                                        status: 'Received'
+                                    });
+
+                                    // Also refresh the full conversation (as backup)
+                                    setTimeout(() => {
+                                        loadConversation(activeConversation.phone, activeConversation.name);
+                                    }, 1000);
+                                }
+
+                                // Refresh the conversations list
+                                refreshConversations();
+                            });
+
+                            socket.on('whatsapp_message_status_update', function (data) {
+                                console.log("WhatsApp message status update via Socket.io:", data);
+                                updateMessageStatus(data);
+                            });
+
+                            socket.on('whatsapp_message_sent', function (data) {
+                                console.log("WhatsApp message sent via Socket.io:", data);
+
+                                // If this message is for the active conversation, add it instantly to the UI
+                                if (activeConversation && data.phone_number === activeConversation.phone) {
+                                    addMessageToUI({
+                                        message_id: data.message_id,
+                                        message: data.message,
+                                        direction: 'Outgoing',
+                                        time: formatTimestamp(data.timestamp),
+                                        status: data.status || 'Sent'
+                                    });
+
+                                    // Also refresh the full conversation (as backup)
+                                    setTimeout(() => {
+                                        loadConversation(activeConversation.phone, activeConversation.name);
+                                    }, 1000);
+                                }
+
+                                // Refresh the conversations list
+                                refreshConversations();
+                            });
+
+                            socket.on('whatsapp_test_event', function (data) {
+                                console.log("WhatsApp test event received via Socket.io:", data);
+                                alert("Real-time test event received: " + data.message);
+                            });
+
+                            console.log("Socket.io event listeners set up successfully");
+                        }
+
+                        try {
+                            // Get the site name from the current hostname
+                            const siteName = window.location.hostname;
+                            const isHttps = window.location.protocol === 'https:';
+
+                            // Try different connection methods based on protocol
+                            if (isHttps) {
+                                // For HTTPS sites, try multiple approaches
+
+                                // 1. Try proxied connection through main domain (requires Nginx config)
+                                const proxiedUrl = `https://${siteName}/${siteName}`;
+                                tryConnection(proxiedUrl, {
+                                    withCredentials: true,
+                                    reconnectionAttempts: 3,
+                                    reconnectionDelay: 1000,
+                                    timeout: 5000,
+                                    secure: true,
+                                    path: '/socket.io/'
+                                }, function () {
+                                    // 2. Try direct HTTPS on port 9000 (requires SSL config)
+                                    console.log("Proxied connection failed, trying direct HTTPS...");
+                                    const httpsUrl = `https://${siteName}:9000/${siteName}`;
+                                    tryConnection(httpsUrl, {
+                                        withCredentials: true,
+                                        reconnectionAttempts: 3,
+                                        reconnectionDelay: 1000,
+                                        timeout: 5000,
+                                        secure: true,
+                                        rejectUnauthorized: false
+                                    }, function () {
+                                        // 3. Last resort: Try HTTP (will fail due to mixed content)
+                                        console.log("HTTPS connection failed, trying HTTP (will likely fail due to mixed content)...");
+                                        const httpUrl = `http://${siteName}:9000/${siteName}`;
+                                        tryConnection(httpUrl, {
+                                            withCredentials: true,
+                                            reconnectionAttempts: 1,
+                                            reconnectionDelay: 1000,
+                                            timeout: 3000,
+                                            secure: false
+                                        }, function () {
+                                            console.warn("All Socket.io connection attempts failed");
+                                            const chatStatusEl = document.querySelector('.chat-status');
+                                            if (chatStatusEl) {
+                                                chatStatusEl.textContent = 'Connection Failed - SSL Required';
+                                            }
+                                        });
+                                    });
+                                });
+                            } else {
+                                // For HTTP sites, try HTTP connection
+                                const httpUrl = `http://${siteName}:9000/${siteName}`;
+                                tryConnection(httpUrl, {
+                                    withCredentials: true,
+                                    reconnectionAttempts: 5,
+                                    reconnectionDelay: 1000,
+                                    timeout: 5000,
+                                    secure: false
+                                }, function () {
+                                    console.warn("HTTP Socket.io connection failed");
+                                    const chatStatusEl = document.querySelector('.chat-status');
+                                    if (chatStatusEl) {
+                                        chatStatusEl.textContent = 'Connection Failed';
+                                    }
+                                });
+                            }
+
+                            return true;
+
+                        } catch (error) {
+                            console.error("Error setting up Socket.io:", error);
+                            return false;
+                        }
+                    }
+
+                    // Try to set up events immediately
+                    if (!setupEvents()) {
+                        // If not available, wait for Socket.io to load
+                        let attempts = 0;
+                        const maxAttempts = 10; // 5 seconds max
+
+                        const checkInterval = setInterval(function () {
+                            attempts++;
+                            console.log(`Attempt ${attempts}/${maxAttempts} to set up Socket.io events`);
+
+                            if (setupEvents()) {
+                                clearInterval(checkInterval);
+                            } else if (attempts >= maxAttempts) {
+                                console.warn("Failed to set up Socket.io events after maximum attempts");
+                                clearInterval(checkInterval);
+                            }
+                        }, 500);
+                    }
                 }
 
                 // Initialize the UI
                 initializeUI();
+
+                // Set up real-time events
+                setupRealtimeEvents();
 
                 // Ensure all event handlers are properly set up
                 ensureEventHandlers();

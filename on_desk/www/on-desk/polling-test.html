@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Polling Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+    <style>
+        body {
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .log-entry {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #ccc;
+        }
+        .log-entry.info { border-left-color: #0d6efd; background-color: #f0f7ff; }
+        .log-entry.success { border-left-color: #198754; background-color: #f0fff5; }
+        .log-entry.warning { border-left-color: #ffc107; background-color: #fffbf0; }
+        .log-entry.error { border-left-color: #dc3545; background-color: #fff0f0; }
+        #event-log {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            margin-bottom: 20px;
+        }
+        .timestamp {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Event Polling Test</h1>
+        
+        <div class="alert alert-info">
+            <h5><i class="uil uil-info-circle me-2"></i>How This Works</h5>
+            <p class="mb-0">
+                This page demonstrates a polling approach to get real-time updates. It periodically checks for new events 
+                using a simple API call instead of socket.io. When you create or update a test event in the system, 
+                this page will detect it and display it in the event log.
+            </p>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>Controls</h5>
+                        <span id="status-badge" class="badge bg-warning">Initializing...</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="polling-interval" class="form-label">Polling Interval (seconds)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="polling-interval" value="5" min="1" max="60">
+                                <button class="btn btn-outline-secondary" type="button" id="update-interval-btn">Update</button>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button id="trigger-event-btn" class="btn btn-primary">
+                                <i class="uil uil-bolt"></i> Trigger Test Event
+                            </button>
+                            <button id="create-event-btn" class="btn btn-success">
+                                <i class="uil uil-plus"></i> Create Test Event
+                            </button>
+                            <button id="force-poll-btn" class="btn btn-secondary">
+                                <i class="uil uil-refresh"></i> Force Poll
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Create Custom Event</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="create-event-form">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="title" placeholder="Enter title" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" rows="2" placeholder="Enter description"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="event-type" class="form-label">Event Type</label>
+                                    <select class="form-select" id="event-type">
+                                        <option value="Info">Info</option>
+                                        <option value="Warning">Warning</option>
+                                        <option value="Error">Error</option>
+                                        <option value="Success">Success</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="status" class="form-label">Status</label>
+                                    <select class="form-select" id="status">
+                                        <option value="Active">Active</option>
+                                        <option value="Inactive">Inactive</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Completed">Completed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="uil uil-plus"></i> Create Event
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>Event Log</h5>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto-scroll-toggle" checked>
+                            <label class="form-check-label" for="auto-scroll-toggle">Auto-scroll</label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="event-log">
+                            <div class="text-center p-4">
+                                <i class="uil uil-signal text-muted" style="font-size: 3rem;"></i>
+                                <p class="mt-2 text-muted">Waiting for events...</p>
+                            </div>
+                        </div>
+                        <button id="clear-log-btn" class="btn btn-outline-secondary">
+                            <i class="uil uil-trash-alt"></i> Clear Log
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>Recent Events</h5>
+                        <span id="event-count" class="badge bg-primary">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-events-list" class="list-group">
+                            <div class="text-center p-4">
+                                <i class="uil uil-bell-slash text-muted" style="font-size: 3rem;"></i>
+                                <p class="mt-2 text-muted">No events yet. Create one to get started!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const eventLog = document.getElementById('event-log');
+            const recentEventsList = document.getElementById('recent-events-list');
+            const autoScrollToggle = document.getElementById('auto-scroll-toggle');
+            const clearLogBtn = document.getElementById('clear-log-btn');
+            const triggerEventBtn = document.getElementById('trigger-event-btn');
+            const createEventForm = document.getElementById('create-event-form');
+            const forcePollBtn = document.getElementById('force-poll-btn');
+            const updateIntervalBtn = document.getElementById('update-interval-btn');
+            const pollingIntervalInput = document.getElementById('polling-interval');
+            const statusBadge = document.getElementById('status-badge');
+            const eventCount = document.getElementById('event-count');
+            
+            // State
+            let lastUpdateTime = null;
+            let pollingInterval = 5000; // 5 seconds
+            let pollingTimer = null;
+            let totalEvents = 0;
+            
+            // Function to add an event to the log
+            function addEventToLog(event, isNew = false) {
+                // Create a timestamp
+                const timestamp = new Date().toLocaleTimeString();
+                
+                // Create the log entry
+                const logEntry = document.createElement('div');
+                logEntry.classList.add('log-entry');
+                
+                // Set color based on event type
+                if (event.event_type === 'Info') {
+                    logEntry.classList.add('info');
+                } else if (event.event_type === 'Warning') {
+                    logEntry.classList.add('warning');
+                } else if (event.event_type === 'Error') {
+                    logEntry.classList.add('error');
+                } else if (event.event_type === 'Success') {
+                    logEntry.classList.add('success');
+                }
+                
+                // Add a highlight class if this is a new event
+                if (isNew) {
+                    logEntry.classList.add('border-2');
+                    logEntry.style.animation = 'fadeIn 1s';
+                }
+                
+                // Set content
+                logEntry.innerHTML = `
+                    <div class="d-flex justify-content-between">
+                        <strong>${event.title || 'Untitled Event'}</strong>
+                        <span class="timestamp">${timestamp}</span>
+                    </div>
+                    <div>${event.description || ''}</div>
+                    <div class="mt-1">
+                        <span class="badge bg-${event.color || 'secondary'}">${event.event_type || 'Unknown'}</span>
+                        <span class="badge bg-secondary">${event.status || 'Unknown'}</span>
+                        ${event.action ? `<span class="badge bg-info">${event.action}</span>` : ''}
+                    </div>
+                `;
+                
+                // Check if the log is empty
+                if (eventLog.querySelector('.text-center')) {
+                    eventLog.innerHTML = '';
+                }
+                
+                // Add to log
+                eventLog.appendChild(logEntry);
+                
+                // Auto-scroll
+                if (autoScrollToggle.checked) {
+                    eventLog.scrollTop = eventLog.scrollHeight;
+                }
+                
+                // Update total events
+                totalEvents++;
+                eventCount.textContent = totalEvents;
+            }
+            
+            // Function to update the recent events list
+            function updateRecentEventsList(events) {
+                // If there are no events, show a message
+                if (!events || events.length === 0) {
+                    recentEventsList.innerHTML = `
+                        <div class="text-center p-4">
+                            <i class="uil uil-bell-slash text-muted" style="font-size: 3rem;"></i>
+                            <p class="mt-2 text-muted">No events yet. Create one to get started!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Clear the list
+                recentEventsList.innerHTML = '';
+                
+                // Add each event to the list
+                events.forEach(function(event) {
+                    const eventItem = document.createElement('a');
+                    eventItem.href = `/app/od-test-event/${event.name}`;
+                    eventItem.classList.add('list-group-item', 'list-group-item-action');
+                    eventItem.innerHTML = `
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">${event.title}</h5>
+                            <small>${event.modified_formatted}</small>
+                        </div>
+                        <p class="mb-1">${event.description || ''}</p>
+                        <div>
+                            <span class="badge bg-${event.color}">${event.event_type}</span>
+                            <span class="badge bg-secondary">${event.status}</span>
+                        </div>
+                    `;
+                    
+                    recentEventsList.appendChild(eventItem);
+                });
+            }
+            
+            // Function to poll for new events
+            function pollForEvents() {
+                // Update status
+                statusBadge.className = 'badge bg-info';
+                statusBadge.innerHTML = '<i class="uil uil-sync fa-spin me-1"></i> Polling...';
+                
+                // Build the URL
+                let url = '/api/method/on_desk.www.on-desk.test-event.api.get_latest_events';
+                
+                // Add the last update time if available
+                if (lastUpdateTime) {
+                    url += `?last_update=${encodeURIComponent(lastUpdateTime)}`;
+                }
+                
+                // Fetch the latest events
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message && data.message.success) {
+                            // Update the last update time
+                            lastUpdateTime = data.message.server_time;
+                            
+                            // Get the events
+                            const events = data.message.events;
+                            
+                            // Update status
+                            statusBadge.className = 'badge bg-success';
+                            statusBadge.textContent = 'Connected';
+                            
+                            // If there are new events, update the UI
+                            if (events && events.length > 0) {
+                                // Update the recent events list
+                                updateRecentEventsList(events);
+                                
+                                // Add each event to the log
+                                events.forEach(function(event) {
+                                    addEventToLog(event, true);
+                                });
+                                
+                                // Show a notification
+                                if (events.length === 1) {
+                                    showNotification('New event received', 'success');
+                                } else {
+                                    showNotification(`${events.length} new events received`, 'success');
+                                }
+                            }
+                        } else {
+                            console.error('Error polling for events:', data.message);
+                            statusBadge.className = 'badge bg-warning';
+                            statusBadge.textContent = 'Error';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error polling for events:', error);
+                        statusBadge.className = 'badge bg-danger';
+                        statusBadge.textContent = 'Connection Error';
+                    })
+                    .finally(() => {
+                        // Schedule the next poll
+                        pollingTimer = setTimeout(pollForEvents, pollingInterval);
+                    });
+            }
+            
+            // Function to show a notification
+            function showNotification(message, type = 'info') {
+                // Create the notification
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type} alert-dismissible fade show position-fixed bottom-0 end-0 m-3`;
+                notification.style.zIndex = '9999';
+                notification.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                // Add to the document
+                document.body.appendChild(notification);
+                
+                // Auto-dismiss after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }
+            
+            // Clear log button
+            clearLogBtn.addEventListener('click', function() {
+                eventLog.innerHTML = `
+                    <div class="text-center p-4">
+                        <i class="uil uil-signal text-muted" style="font-size: 3rem;"></i>
+                        <p class="mt-2 text-muted">Waiting for events...</p>
+                    </div>
+                `;
+            });
+            
+            // Trigger event button
+            triggerEventBtn.addEventListener('click', function() {
+                // Show loading state
+                this.disabled = true;
+                this.innerHTML = '<i class="uil uil-spinner-alt fa-spin"></i> Triggering...';
+                
+                // Call the API
+                fetch('/api/method/on_desk.www.on-desk.test-event.api.trigger_test_event', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: 'Manual Test Event',
+                        description: 'This event was triggered manually via the polling test page',
+                        event_type: 'Info',
+                        status: 'Active'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button state
+                    this.disabled = false;
+                    this.innerHTML = '<i class="uil uil-bolt"></i> Trigger Test Event';
+                    
+                    if (data.message && data.message.success) {
+                        showNotification('Test event triggered successfully', 'success');
+                        
+                        // Force an immediate poll for new events
+                        clearTimeout(pollingTimer);
+                        pollForEvents();
+                    } else {
+                        showNotification('Failed to trigger test event', 'danger');
+                    }
+                })
+                .catch(error => {
+                    // Reset button state
+                    this.disabled = false;
+                    this.innerHTML = '<i class="uil uil-bolt"></i> Trigger Test Event';
+                    
+                    showNotification(`Error: ${error.message}`, 'danger');
+                });
+            });
+            
+            // Create event form
+            createEventForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Get form values
+                const title = document.getElementById('title').value;
+                const description = document.getElementById('description').value;
+                const eventType = document.getElementById('event-type').value;
+                const status = document.getElementById('status').value;
+                
+                // Show loading state
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="uil uil-spinner-alt fa-spin"></i> Creating...';
+                
+                // Call the API
+                fetch('/api/method/on_desk.www.on-desk.test-event.api.create_test_event', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        description: description,
+                        event_type: eventType,
+                        status: status
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="uil uil-plus"></i> Create Event';
+                    
+                    if (data.message && data.message.success) {
+                        showNotification('Event created successfully', 'success');
+                        
+                        // Reset the form
+                        this.reset();
+                        
+                        // Force an immediate poll for new events
+                        clearTimeout(pollingTimer);
+                        pollForEvents();
+                    } else {
+                        showNotification('Failed to create event', 'danger');
+                    }
+                })
+                .catch(error => {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="uil uil-plus"></i> Create Event';
+                    
+                    showNotification(`Error: ${error.message}`, 'danger');
+                });
+            });
+            
+            // Force poll button
+            forcePollBtn.addEventListener('click', function() {
+                // Show loading state
+                this.disabled = true;
+                this.innerHTML = '<i class="uil uil-spinner-alt fa-spin"></i> Polling...';
+                
+                // Clear the current timer
+                clearTimeout(pollingTimer);
+                
+                // Force a poll
+                pollForEvents();
+                
+                // Reset button state after a short delay
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="uil uil-refresh"></i> Force Poll';
+                }, 1000);
+            });
+            
+            // Update interval button
+            updateIntervalBtn.addEventListener('click', function() {
+                // Get the new interval
+                const newInterval = parseInt(pollingIntervalInput.value);
+                
+                // Validate the interval
+                if (isNaN(newInterval) || newInterval < 1 || newInterval > 60) {
+                    showNotification('Please enter a valid interval between 1 and 60 seconds', 'warning');
+                    return;
+                }
+                
+                // Update the interval
+                pollingInterval = newInterval * 1000;
+                
+                // Clear the current timer
+                clearTimeout(pollingTimer);
+                
+                // Start a new timer
+                pollingTimer = setTimeout(pollForEvents, pollingInterval);
+                
+                // Show a notification
+                showNotification(`Polling interval updated to ${newInterval} seconds`, 'success');
+            });
+            
+            // Start polling for events
+            pollForEvents();
+            
+            // Show a status message
+            showNotification('Polling for events every 5 seconds...', 'info');
+        });
+    </script>
+</body>
+</html>

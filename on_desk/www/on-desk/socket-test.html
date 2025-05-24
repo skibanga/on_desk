@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Socket.io Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .log-entry {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #ccc;
+        }
+
+        .log-entry.info {
+            border-left-color: #0d6efd;
+            background-color: #f0f7ff;
+        }
+
+        .log-entry.success {
+            border-left-color: #198754;
+            background-color: #f0fff5;
+        }
+
+        .log-entry.warning {
+            border-left-color: #ffc107;
+            background-color: #fffbf0;
+        }
+
+        .log-entry.error {
+            border-left-color: #dc3545;
+            background-color: #fff0f0;
+        }
+
+        #event-log {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            margin-bottom: 20px;
+        }
+
+        .timestamp {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="mb-4">WhatsApp Socket.io Test</h1>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Connection Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="connection-status" class="alert alert-warning">
+                            Initializing...
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button id="connect-btn" class="btn btn-primary">Connect</button>
+                            <button id="disconnect-btn" class="btn btn-secondary" disabled>Disconnect</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Send WhatsApp Test Event</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="event-form">
+                            <div class="mb-3">
+                                <label for="phone-number" class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="phone-number" value="1234567890">
+                            </div>
+                            <div class="mb-3">
+                                <label for="message-text" class="form-label">Message Text</label>
+                                <textarea class="form-control" id="message-text"
+                                    rows="3">This is a test WhatsApp message</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success">Send Test Message</button>
+                            <button type="button" id="api-trigger-btn" class="btn btn-primary ms-2">Trigger via
+                                API</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>WhatsApp Event Log</h5>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="auto-scroll" checked>
+                    <label class="form-check-label" for="auto-scroll">Auto-scroll</label>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="event-log">
+                    <div class="text-center text-muted p-5">
+                        <p>Waiting for WhatsApp events...</p>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="listen-whatsapp" checked>
+                            <label class="form-check-label" for="listen-whatsapp">whatsapp_message_received</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="listen-whatsapp-status" checked>
+                            <label class="form-check-label"
+                                for="listen-whatsapp-status">whatsapp_message_status_update</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="listen-whatsapp-immediate" checked>
+                            <label class="form-check-label"
+                                for="listen-whatsapp-immediate">whatsapp_message_received_immediate</label>
+                        </div>
+                    </div>
+                    <button id="clear-log" class="btn btn-outline-secondary">Clear Log</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Elements
+            const connectBtn = document.getElementById('connect-btn');
+            const disconnectBtn = document.getElementById('disconnect-btn');
+            const connectionStatus = document.getElementById('connection-status');
+            const eventForm = document.getElementById('event-form');
+            const phoneNumberInput = document.getElementById('phone-number');
+            const messageTextInput = document.getElementById('message-text');
+            const eventLog = document.getElementById('event-log');
+            const autoScroll = document.getElementById('auto-scroll');
+            const clearLogBtn = document.getElementById('clear-log');
+            const listenWhatsapp = document.getElementById('listen-whatsapp');
+            const listenWhatsappStatus = document.getElementById('listen-whatsapp-status');
+            const listenWhatsappImmediate = document.getElementById('listen-whatsapp-immediate');
+
+            // Socket.io instance
+            let socket = null;
+
+            // Connect to socket.io server
+            function connect() {
+                try {
+                    // Get the socket.io port (default to 9001)
+                    const port = 9001;
+
+                    // Get the host URL
+                    let host = window.location.origin;
+                    let sitename = window.location.pathname.split('/')[1] || '';
+
+                    if (window.location.port) {
+                        // If we're in a development environment with a custom port
+                        let parts = host.split(":");
+                        if (parts.length > 2) {
+                            host = parts[0] + ":" + parts[1];
+                        }
+                        host = host + ":" + port;
+                    }
+
+                    const socketUrl = host + `/${sitename}`;
+                    log('info', `Connecting to socket.io server at ${socketUrl}...`);
+
+                    // Initialize the socket
+                    socket = io(socketUrl, {
+                        withCredentials: true,
+                        reconnectionAttempts: 5
+                    });
+
+                    // Connection events
+                    socket.on('connect', () => {
+                        log('success', 'Connected to socket.io server');
+                        connectionStatus.className = 'alert alert-success';
+                        connectionStatus.textContent = 'Connected';
+                        connectBtn.disabled = true;
+                        disconnectBtn.disabled = false;
+
+                        // Subscribe to events
+                        setupEventListeners();
+                    });
+
+                    socket.on('disconnect', () => {
+                        log('error', 'Disconnected from socket.io server');
+                        connectionStatus.className = 'alert alert-danger';
+                        connectionStatus.textContent = 'Disconnected';
+                        connectBtn.disabled = false;
+                        disconnectBtn.disabled = true;
+                    });
+
+                    socket.on('connect_error', (err) => {
+                        log('error', `Connection error: ${err.message}`);
+                        connectionStatus.className = 'alert alert-danger';
+                        connectionStatus.textContent = `Connection error: ${err.message}`;
+                        connectBtn.disabled = false;
+                        disconnectBtn.disabled = true;
+                    });
+                } catch (error) {
+                    log('error', `Error initializing socket: ${error.message}`);
+                    connectionStatus.className = 'alert alert-danger';
+                    connectionStatus.textContent = `Error: ${error.message}`;
+                }
+            }
+
+            // Disconnect from socket.io server
+            function disconnect() {
+                if (socket) {
+                    socket.disconnect();
+                    socket = null;
+                }
+            }
+
+            // Set up event listeners
+            function setupEventListeners() {
+                if (!socket) return;
+
+                // Listen for whatsapp_message_received
+                if (listenWhatsapp.checked) {
+                    socket.on('whatsapp_message_received', (data) => {
+                        log('info', `Received whatsapp_message_received: ${JSON.stringify(data)}`);
+                    });
+                }
+
+                // Listen for whatsapp_message_status_update
+                if (listenWhatsappStatus.checked) {
+                    socket.on('whatsapp_message_status_update', (data) => {
+                        log('info', `Received whatsapp_message_status_update: ${JSON.stringify(data)}`);
+                    });
+                }
+
+                // Listen for whatsapp_message_received_immediate
+                if (listenWhatsappImmediate.checked) {
+                    socket.on('whatsapp_message_received_immediate', (data) => {
+                        log('info', `Received whatsapp_message_received_immediate: ${JSON.stringify(data)}`);
+                    });
+                }
+
+                // Also listen for whatsapp_message_status_update_immediate
+                if (listenWhatsappStatus.checked) {
+                    socket.on('whatsapp_message_status_update_immediate', (data) => {
+                        log('info', `Received whatsapp_message_status_update_immediate: ${JSON.stringify(data)}`);
+                    });
+                }
+            }
+
+            // Add log entry
+            function log(type, message) {
+                // Create log entry
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
+
+                // Create timestamp
+                const timestamp = new Date().toLocaleTimeString();
+
+                // Set content
+                entry.innerHTML = `
+                    <div class="d-flex justify-content-between">
+                        <strong>${type.toUpperCase()}</strong>
+                        <span class="timestamp">${timestamp}</span>
+                    </div>
+                    <div>${message}</div>
+                `;
+
+                // Add to log
+                if (eventLog.querySelector('.text-center')) {
+                    eventLog.innerHTML = '';
+                }
+                eventLog.appendChild(entry);
+
+                // Auto-scroll
+                if (autoScroll.checked) {
+                    eventLog.scrollTop = eventLog.scrollHeight;
+                }
+            }
+
+            // Event listeners
+            connectBtn.addEventListener('click', connect);
+            disconnectBtn.addEventListener('click', disconnect);
+
+            eventForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                if (!socket || !socket.connected) {
+                    log('error', 'Not connected to socket.io server');
+                    return;
+                }
+
+                try {
+                    const phoneNumber = phoneNumberInput.value.trim();
+                    const messageText = messageTextInput.value.trim();
+
+                    // Create event data
+                    const eventData = {
+                        from_number: phoneNumber,
+                        message: messageText,
+                        timestamp: Math.floor(Date.now() / 1000),
+                        message_id: `test_${Date.now()}`,
+                        direction: "Incoming"
+                    };
+
+                    // Emit the event
+                    socket.emit('whatsapp_message_received', eventData);
+                    log('success', `Sent whatsapp_message_received: ${JSON.stringify(eventData)}`);
+                } catch (error) {
+                    log('error', `Error sending event: ${error.message}`);
+                }
+            });
+
+            clearLogBtn.addEventListener('click', function () {
+                eventLog.innerHTML = `
+                    <div class="text-center text-muted p-5">
+                        <p>Waiting for WhatsApp events...</p>
+                    </div>
+                `;
+            });
+
+            // Toggle event listeners
+            listenWhatsapp.addEventListener('change', setupEventListeners);
+            listenWhatsappStatus.addEventListener('change', setupEventListeners);
+            listenWhatsappImmediate.addEventListener('change', setupEventListeners);
+
+            // API trigger button
+            document.getElementById('api-trigger-btn').addEventListener('click', function () {
+                const phoneNumber = phoneNumberInput.value.trim();
+                const messageText = messageTextInput.value.trim();
+
+                // Show loading state
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Triggering...';
+
+                // Call the API
+                fetch('/api/method/on_desk.on_desk.doctype.od_whatsapp_integration.api.test_whatsapp_event', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Frappe-CSRF-Token': frappe.csrf_token || ''
+                    },
+                    body: JSON.stringify({
+                        phone_number: phoneNumber,
+                        message: messageText
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Reset button state
+                        this.disabled = false;
+                        this.innerHTML = 'Trigger via API';
+
+                        if (data.message && data.message.success) {
+                            log('success', `API call successful: ${JSON.stringify(data.message)}`);
+                        } else {
+                            log('error', `API call failed: ${JSON.stringify(data.message || data)}`);
+                        }
+                    })
+                    .catch(error => {
+                        // Reset button state
+                        this.disabled = false;
+                        this.innerHTML = 'Trigger via API';
+
+                        log('error', `API call error: ${error.message}`);
+                    });
+            });
+
+            // Auto-connect on page load
+            connect();
+        });
+    </script>
+</body>
+
+</html>

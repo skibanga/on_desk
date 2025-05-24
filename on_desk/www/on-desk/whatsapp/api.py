@@ -233,6 +233,23 @@ def send_message(phone_number, message):
                     message=f"Created message record: {msg.name}",
                     title="WhatsApp Debug",
                 )
+
+                # Publish realtime event for the new message
+                event_data = {
+                    "message_id": message_id,
+                    "phone_number": phone_number,
+                    "message": message,
+                    "direction": "Outgoing",
+                    "status": "Sent",
+                    "timestamp": frappe.utils.now(),
+                }
+                frappe.publish_realtime("whatsapp_message_sent", event_data)
+
+                # Log the event for debugging
+                frappe.log_error(
+                    message=f"Published realtime event for sent message: {message_id}",
+                    title="WhatsApp Realtime Event",
+                )
             except Exception as e:
                 error_trace = traceback.format_exc()
                 frappe.log_error(
@@ -302,6 +319,40 @@ def test_api():
         message="test_api function was called successfully", title="WhatsApp Debug"
     )
     return {"success": True, "message": "API is reachable"}
+
+
+@frappe.whitelist()
+def test_realtime():
+    """Test function to check if real-time events are working"""
+    try:
+        # Publish a test real-time event
+        test_data = {
+            "message": "This is a test real-time event",
+            "timestamp": frappe.utils.now(),
+            "test": True,
+        }
+
+        frappe.publish_realtime("whatsapp_test_event", test_data)
+
+        frappe.log_error(
+            message=f"Published test real-time event: {test_data}",
+            title="WhatsApp Realtime Test",
+        )
+
+        return {
+            "success": True,
+            "message": "Test real-time event published successfully",
+            "data": test_data,
+        }
+    except Exception as e:
+        frappe.log_error(
+            message=f"Error publishing test real-time event: {str(e)}",
+            title="WhatsApp Realtime Test Error",
+        )
+        return {
+            "success": False,
+            "message": f"Error publishing test real-time event: {str(e)}",
+        }
 
 
 @frappe.whitelist()

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - {{ app_name }}</title>
+
+    <!-- Include CSS -->
+    {% for css in web_include_css %}
+    <link rel="stylesheet" href="{{ css }}">
+    {% endfor %}
+
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #16526e;
+            --secondary-color: #f8f9fa;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #3b82f6;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sidebar-logo img {
+            max-width: 120px;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: block;
+            padding: 10px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #f5f7fa;
+            color: var(--primary-color);
+        }
+
+        .sidebar-menu a.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+        }
+
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .header-welcome {
+            font-weight: bold;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #f5f7fa;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-icon:hover {
+            background-color: #e9ecef;
+        }
+
+        .user-dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            padding: 10px 0;
+            min-width: 200px;
+            display: none;
+            z-index: 100;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 10px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .dropdown-menu a:hover {
+            background-color: #f5f7fa;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: #eee;
+            margin: 5px 0;
+        }
+
+        .text-danger {
+            color: var(--danger-color);
+        }
+
+        /* Dark mode styles */
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #f5f7fa;
+        }
+
+        body.dark-mode .sidebar,
+        body.dark-mode .header,
+        body.dark-mode .card {
+            background-color: #2a2a2a;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .sidebar-menu a {
+            color: #f5f7fa;
+        }
+
+        body.dark-mode .sidebar-menu a:hover {
+            background-color: #3a3a3a;
+        }
+
+        body.dark-mode .sidebar-menu a.active {
+            background-color: var(--primary-color);
+        }
+
+        body.dark-mode .dropdown-menu {
+            background-color: #2a2a2a;
+        }
+
+        body.dark-mode .dropdown-menu a {
+            color: #f5f7fa;
+        }
+
+        body.dark-mode .dropdown-menu a:hover {
+            background-color: #3a3a3a;
+        }
+
+        body.dark-mode .dropdown-divider {
+            background-color: #3a3a3a;
+        }
+
+        body.dark-mode .btn-icon {
+            background-color: #3a3a3a;
+        }
+
+        body.dark-mode .btn-icon:hover {
+            background-color: #4a4a4a;
+        }
+
+        /* Additional utility classes */
+        .bg-light-primary {
+            background-color: rgba(22, 82, 110, 0.1);
+        }
+
+        .bg-light-success {
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+
+        .bg-light-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+
+        .bg-light-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .bg-light-info {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+
+<body class="{{ 'dark-mode' if dark_mode else '' }}">
+    <div class="app-container">
+        <!-- Sidebar -->
+        {% include "on_desk/www/on-desk/includes/sidebar.html" %}
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            {% include "on_desk/www/on-desk/includes/header.html" %}
+
+            <!-- Page Content -->
+            {% block page_content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Include JS -->
+    <!-- Core dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+
+    <!-- Global configuration -->
+    <script>
+        // Provide minimal configuration for phoenix.js
+        window.config = {
+            socketio_port: 9001,
+            app: {
+                name: "On Desk"
+            },
+            // Phoenix.js specific configuration
+            config: {
+                phoenixSupportChat: false,
+                disableAnchorJS: true,
+                opera: false
+            }
+        };
+
+        // Add AnchorJS stub to prevent errors
+        window.AnchorJS = function () {
+            return {
+                add: function () { },
+                remove: function () { }
+            };
+        };
+
+        // Create a minimal frappe object if it doesn't exist
+        if (typeof window.frappe === 'undefined') {
+            window.frappe = {
+                _: window._ || {}, // Use lodash if available
+                provide: function (namespace) {
+                    let parts = namespace.split('.');
+                    let current = window;
+
+                    for (let i = 0; i < parts.length; i++) {
+                        current[parts[i]] = current[parts[i]] || {};
+                        current = current[parts[i]];
+                    }
+
+                    return current;
+                },
+                datetime: {
+                    now_datetime: function () {
+                        return new Date().toISOString();
+                    }
+                },
+                show_alert: function (opts) {
+                    alert(opts.message || 'Alert');
+                }
+            };
+        }
+    </script>
+
+    <!-- Frappe assets -->
+    {% for js in web_include_js %}
+    <script src="{{ js }}"></script>
+    {% endfor %}
+
+    <!-- Page-specific JS -->
+    {% block page_js %}{% endblock %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // User dropdown toggle
+            const userDropdownBtn = document.getElementById('userDropdownBtn');
+            const userDropdownMenu = document.getElementById('userDropdownMenu');
+
+            if (userDropdownBtn && userDropdownMenu) {
+                userDropdownBtn.addEventListener('click', function () {
+                    userDropdownMenu.classList.toggle('show');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function (event) {
+                    if (!userDropdownBtn.contains(event.target) && !userDropdownMenu.contains(event.target)) {
+                        userDropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

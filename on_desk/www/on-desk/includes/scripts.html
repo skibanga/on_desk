@@ -12,6 +12,16 @@
 
         // Function to dispatch the frappe_loaded event
         function dispatchFrappeLoaded() {
+            // Initialize frappe.realtime if it exists but isn't initialized
+            if (typeof frappe !== 'undefined' && frappe.realtime && !frappe.realtime.socket) {
+                console.log("Initializing frappe.realtime...");
+                try {
+                    frappe.realtime.init();
+                } catch (e) {
+                    console.warn("Failed to initialize frappe.realtime:", e);
+                }
+            }
+
             document.dispatchEvent(new Event('frappe_loaded'));
         }
 
@@ -27,10 +37,22 @@
             var webScript = document.createElement('script');
             webScript.src = '/assets/js/frappe-web.min.js';
             webScript.onload = function () {
-                // Check again after a short delay
-                setTimeout(function () {
-                    dispatchFrappeLoaded();
-                }, 300);
+                // Load the realtime client after frappe-web is loaded
+                var realtimeScript = document.createElement('script');
+                realtimeScript.src = '/assets/js/frappe-realtime.min.js';
+                realtimeScript.onload = function () {
+                    // Check again after a short delay
+                    setTimeout(function () {
+                        dispatchFrappeLoaded();
+                    }, 300);
+                };
+                realtimeScript.onerror = function () {
+                    // If realtime script fails, continue anyway
+                    setTimeout(function () {
+                        dispatchFrappeLoaded();
+                    }, 300);
+                };
+                document.head.appendChild(realtimeScript);
             };
             document.head.appendChild(webScript);
             return;
@@ -45,8 +67,18 @@
             var webScript = document.createElement('script');
             webScript.src = '/assets/js/frappe-web.min.js';
             webScript.onload = function () {
-                // Allow time for initialization
-                setTimeout(dispatchFrappeLoaded, 300);
+                // Load the realtime client after frappe-web is loaded
+                var realtimeScript = document.createElement('script');
+                realtimeScript.src = '/assets/js/frappe-realtime.min.js';
+                realtimeScript.onload = function () {
+                    // Allow time for initialization
+                    setTimeout(dispatchFrappeLoaded, 300);
+                };
+                realtimeScript.onerror = function () {
+                    // If realtime script fails, continue anyway
+                    setTimeout(dispatchFrappeLoaded, 300);
+                };
+                document.head.appendChild(realtimeScript);
             };
             document.head.appendChild(webScript);
         };
