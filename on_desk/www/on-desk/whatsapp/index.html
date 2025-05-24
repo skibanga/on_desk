@@ -1175,50 +1175,125 @@
                     console.log('Adding message elements');
                     messages.forEach(message => {
                         console.log('Processing message:', message);
-
-                        const messageElement = document.createElement('div');
-                        messageElement.classList.add('message');
-                        messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
-                        messageElement.dataset.messageId = message.message_id;
-
-                        let messageContent = `
-                        ${message.message}
-                        <div class="message-time">${message.time}</div>
-                    `;
-
-                        if (message.direction === 'Outgoing') {
-                            let statusIcon = '';
-                            let statusClass = '';
-
-                            if (message.status === 'Sent') {
-                                statusIcon = 'uil-check';
-                                statusClass = 'status-sent';
-                            } else if (message.status === 'Delivered') {
-                                statusIcon = 'uil-check-double';
-                                statusClass = 'status-delivered';
-                            } else if (message.status === 'Read') {
-                                statusIcon = 'uil-check-double';
-                                statusClass = 'status-read';
-                            } else if (message.status === 'Failed') {
-                                statusIcon = 'uil-times';
-                                statusClass = 'status-failed';
-                            }
-
-                            messageContent += `
-                            <div class="message-status">
-                                <span>${message.status}</span>
-                                <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
-                            </div>
-                        `;
-                        }
-
-                        messageElement.innerHTML = messageContent;
-                        messagesContainer.appendChild(messageElement);
+                        addMessageElementToContainer(message, messagesContainer);
                     });
 
                     console.log('Scrolling to bottom');
                     // Scroll to bottom
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+
+                // Helper function to create a message element
+                function addMessageElementToContainer(message, container) {
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('message');
+                    messageElement.classList.add(message.direction === 'Incoming' ? 'message-incoming' : 'message-outgoing');
+                    messageElement.dataset.messageId = message.message_id;
+
+                    let messageContent = `
+                        ${message.message}
+                        <div class="message-time">${message.time}</div>
+                    `;
+
+                    if (message.direction === 'Outgoing') {
+                        let statusIcon = '';
+                        let statusClass = '';
+
+                        if (message.status === 'Sent') {
+                            statusIcon = 'uil-check';
+                            statusClass = 'status-sent';
+                        } else if (message.status === 'Delivered') {
+                            statusIcon = 'uil-check-double';
+                            statusClass = 'status-delivered';
+                        } else if (message.status === 'Read') {
+                            statusIcon = 'uil-check-double';
+                            statusClass = 'status-read';
+                        } else if (message.status === 'Failed') {
+                            statusIcon = 'uil-times';
+                            statusClass = 'status-failed';
+                        }
+
+                        messageContent += `
+                            <div class="message-status">
+                                <span>${message.status}</span>
+                                <i class="uil ${statusIcon} status-icon ${statusClass}"></i>
+                            </div>
+                        `;
+                    }
+
+                    messageElement.innerHTML = messageContent;
+                    container.appendChild(messageElement);
+                }
+
+                // Function to add a single message to the UI instantly
+                function addMessageToUI(message) {
+                    console.log('Adding message to UI instantly:', message);
+
+                    const messagesContainer = document.querySelector('.chat-messages') || document.querySelector('#chat-messages');
+                    if (!messagesContainer) {
+                        console.error('Messages container not found');
+                        return;
+                    }
+
+                    // Check if message already exists (avoid duplicates)
+                    const existingMessage = messagesContainer.querySelector(`[data-message-id="${message.message_id}"]`);
+                    if (existingMessage) {
+                        console.log('Message already exists, skipping');
+                        return;
+                    }
+
+                    // Remove empty state if it exists
+                    const emptyState = messagesContainer.querySelector('.empty-state');
+                    if (emptyState) {
+                        emptyState.remove();
+
+                        // Add date divider if this is the first message
+                        const dateDivider = document.createElement('div');
+                        dateDivider.classList.add('date-divider');
+                        dateDivider.textContent = 'Today';
+                        messagesContainer.appendChild(dateDivider);
+                    }
+
+                    // Add the new message
+                    addMessageElementToContainer(message, messagesContainer);
+
+                    // Scroll to bottom with smooth animation
+                    messagesContainer.scrollTo({
+                        top: messagesContainer.scrollHeight,
+                        behavior: 'smooth'
+                    });
+
+                    // Add a subtle animation to the new message
+                    const newMessageElement = messagesContainer.querySelector(`[data-message-id="${message.message_id}"]`);
+                    if (newMessageElement) {
+                        newMessageElement.style.opacity = '0';
+                        newMessageElement.style.transform = 'translateY(20px)';
+
+                        setTimeout(() => {
+                            newMessageElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                            newMessageElement.style.opacity = '1';
+                            newMessageElement.style.transform = 'translateY(0)';
+                        }, 50);
+                    }
+                }
+
+                // Function to format timestamp
+                function formatTimestamp(timestamp) {
+                    if (!timestamp) return 'Just now';
+
+                    // Handle Unix timestamp (seconds)
+                    if (typeof timestamp === 'number' || (typeof timestamp === 'string' && /^\d+$/.test(timestamp))) {
+                        const date = new Date(parseInt(timestamp) * 1000);
+                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    }
+
+                    // Handle ISO string or other formats
+                    try {
+                        const date = new Date(timestamp);
+                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    } catch (e) {
+                        return 'Just now';
+                    }
                 }
 
                 // Function to send a message
@@ -1924,9 +1999,20 @@
                             socket.on('whatsapp_message_received', function (data) {
                                 console.log("WhatsApp message received via Socket.io:", data);
 
-                                // If this message is for the active conversation, refresh the messages
+                                // If this message is for the active conversation, add it instantly to the UI
                                 if (activeConversation && data.from_number === activeConversation.phone) {
-                                    loadConversation(activeConversation.phone, activeConversation.name);
+                                    addMessageToUI({
+                                        message_id: data.message_id,
+                                        message: data.message,
+                                        direction: 'Incoming',
+                                        time: formatTimestamp(data.timestamp),
+                                        status: 'Received'
+                                    });
+
+                                    // Also refresh the full conversation (as backup)
+                                    setTimeout(() => {
+                                        loadConversation(activeConversation.phone, activeConversation.name);
+                                    }, 1000);
                                 }
 
                                 // Refresh the conversations list
@@ -1941,9 +2027,20 @@
                             socket.on('whatsapp_message_sent', function (data) {
                                 console.log("WhatsApp message sent via Socket.io:", data);
 
-                                // If this message is for the active conversation, refresh the messages
+                                // If this message is for the active conversation, add it instantly to the UI
                                 if (activeConversation && data.phone_number === activeConversation.phone) {
-                                    loadConversation(activeConversation.phone, activeConversation.name);
+                                    addMessageToUI({
+                                        message_id: data.message_id,
+                                        message: data.message,
+                                        direction: 'Outgoing',
+                                        time: formatTimestamp(data.timestamp),
+                                        status: data.status || 'Sent'
+                                    });
+
+                                    // Also refresh the full conversation (as backup)
+                                    setTimeout(() => {
+                                        loadConversation(activeConversation.phone, activeConversation.name);
+                                    }, 1000);
                                 }
 
                                 // Refresh the conversations list
