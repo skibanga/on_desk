@@ -2,7 +2,6 @@ import frappe
 from frappe import _
 from frappe.utils import pretty_date
 from on_desk.utils.whatsapp import get_whatsapp_integration
-import json
 
 
 def get_contact_display_name(contact):
@@ -244,7 +243,13 @@ def send_message(phone_number, message):
                     "status": "Sent",
                     "timestamp": frappe.utils.now(),
                 }
-                safe_publish_realtime("whatsapp_message_sent", event_data)
+                frappe.publish_realtime("whatsapp_message_sent", event_data)
+
+                # Log the event for debugging
+                frappe.log_error(
+                    message=f"Published realtime event for sent message: {message_id}",
+                    title="WhatsApp Realtime Event",
+                )
             except Exception as e:
                 error_trace = traceback.format_exc()
                 frappe.log_error(
@@ -317,50 +322,36 @@ def test_api():
 
 
 @frappe.whitelist()
-def safe_publish_realtime(event, message):
-    """
-    A whitelisted wrapper around frappe.publish_realtime
-
-    This function is needed because frappe.publish_realtime is not whitelisted
-    and cannot be called directly from the client side.
-    """
+def test_realtime():
+    """Test function to check if real-time events are working"""
     try:
-        # Convert message to dict if it's a string
-        if isinstance(message, str):
-            try:
-                message = json.loads(message)
-            except Exception:
-                # If it's not valid JSON, keep it as is
-                pass
+        # Publish a test real-time event
+        test_data = {
+            "message": "This is a test real-time event",
+            "timestamp": frappe.utils.now(),
+            "test": True,
+        }
 
-        # Log the event details
+        frappe.publish_realtime("whatsapp_test_event", test_data)
+
         frappe.log_error(
-            message=f"Publishing realtime event: {event}\nMessage: {message}",
-            title="WhatsApp Realtime Event Debug",
-        )
-
-        # Publish the event
-        frappe.publish_realtime(event, message)
-
-        # Log success
-        frappe.log_error(
-            message=f"Successfully published realtime event: {event}",
-            title="WhatsApp Realtime Event Success",
+            message=f"Published test real-time event: {test_data}",
+            title="WhatsApp Realtime Test",
         )
 
         return {
             "success": True,
-            "message": f"Event '{event}' published successfully",
-            "event_data": message,
+            "message": "Test real-time event published successfully",
+            "data": test_data,
         }
     except Exception as e:
         frappe.log_error(
-            message=f"Error publishing realtime event: {str(e)}\nEvent: {event}\nMessage: {message}",
-            title="WhatsApp Realtime Event Error",
+            message=f"Error publishing test real-time event: {str(e)}",
+            title="WhatsApp Realtime Test Error",
         )
         return {
             "success": False,
-            "message": f"Error publishing realtime event: {str(e)}",
+            "message": f"Error publishing test real-time event: {str(e)}",
         }
 
 
