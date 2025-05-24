@@ -107,8 +107,8 @@ class AdvancedTicketFilter {
 
         // Quick filter buttons
         this.quickFilterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.applyQuickFilter(btn.dataset.filter);
+            btn.addEventListener('click', (e) => {
+                this.applyQuickFilter(btn.dataset.filter, e.target);
             });
         });
     }
@@ -119,13 +119,32 @@ class AdvancedTicketFilter {
                 method: 'on_desk.api.get_filter_options'
             });
 
-            if (response.message && response.message.success) {
+            if (response && response.message && response.message.success) {
                 const options = response.message.options;
                 this.populateFilterOptions(options);
+            } else {
+                console.warn('Invalid response from get_filter_options:', response);
+                // Use default empty options
+                this.populateFilterOptions({
+                    statuses: [{ "name": "All", "label": "All Statuses" }],
+                    priorities: [{ "name": "All", "label": "All Priorities" }],
+                    agent_groups: [{ "name": "All", "label": "All Teams" }],
+                    ticket_types: [{ "name": "All", "label": "All Types" }],
+                    customers: [{ "name": "All", "label": "All Customers" }],
+                    agents: [{ "name": "All", "label": "All Agents" }],
+                });
             }
         } catch (error) {
             console.error('Error loading filter options:', error);
-            this.showError('Failed to load filter options');
+            // Use default empty options on error
+            this.populateFilterOptions({
+                statuses: [{ "name": "All", "label": "All Statuses" }],
+                priorities: [{ "name": "All", "label": "All Priorities" }],
+                agent_groups: [{ "name": "All", "label": "All Teams" }],
+                ticket_types: [{ "name": "All", "label": "All Types" }],
+                customers: [{ "name": "All", "label": "All Customers" }],
+                agents: [{ "name": "All", "label": "All Agents" }],
+            });
         }
     }
 
@@ -216,9 +235,9 @@ class AdvancedTicketFilter {
 
         try {
             const filters = this.buildFilters();
-            const searchText = this.searchInput.value.trim();
-            const sortBy = this.sortBy.value;
-            const sortOrder = this.sortOrder.value;
+            const searchText = this.searchInput ? this.searchInput.value.trim() : '';
+            const sortBy = this.sortBy ? this.sortBy.value : 'modified';
+            const sortOrder = this.sortOrder ? this.sortOrder.value : 'desc';
 
             const response = await frappe.call({
                 method: 'on_desk.api.get_tickets_advanced',
@@ -232,19 +251,22 @@ class AdvancedTicketFilter {
                 }
             });
 
-            if (response.message && response.message.success) {
+            if (response && response.message && response.message.success) {
                 const data = response.message;
-                this.totalCount = data.total_count;
-                this.totalPages = data.total_pages;
-                this.renderTickets(data.tickets);
+                this.totalCount = data.total_count || 0;
+                this.totalPages = data.total_pages || 1;
+                this.renderTickets(data.tickets || []);
                 this.renderPagination();
                 this.updateResultsInfo();
             } else {
-                this.showError(response.message?.message || 'Failed to load tickets');
+                const errorMessage = (response && response.message && response.message.message)
+                    ? response.message.message
+                    : 'Failed to load tickets';
+                this.showError(errorMessage);
             }
         } catch (error) {
             console.error('Error loading tickets:', error);
-            this.showError('Failed to load tickets');
+            this.showError('Failed to load tickets: ' + (error.message || 'Unknown error'));
         } finally {
             this.isLoading = false;
         }
@@ -428,10 +450,20 @@ class AdvancedTicketFilter {
         this.loadTickets();
     }
 
-    applyQuickFilter(filterType) {
+    applyQuickFilter(filterType, buttonElement = null) {
         // Update button states
         this.quickFilterBtns.forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
+
+        // Find the button that was clicked
+        if (buttonElement) {
+            buttonElement.classList.add('active');
+        } else {
+            // Find button by data-filter attribute
+            const targetButton = document.querySelector(`[data-filter="${filterType}"]`);
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
+        }
 
         // Clear existing filters
         this.clearAllFilters();
@@ -448,7 +480,9 @@ class AdvancedTicketFilter {
                 // Filter for overdue tickets
                 break;
             case 'high-priority':
-                this.priorityFilter.value = 'High';
+                if (this.priorityFilter) {
+                    this.priorityFilter.value = 'High';
+                }
                 break;
         }
 
@@ -472,15 +506,18 @@ class AdvancedTicketFilter {
                     }
                 });
 
-                if (response.message && response.message.success) {
+                if (response && response.message && response.message.success) {
                     frappe.show_alert({
                         message: `Filter preset "${presetName}" saved successfully`,
                         indicator: 'green'
                     });
                     this.loadFilterPresets(); // Reload presets
                 } else {
+                    const errorMessage = (response && response.message && response.message.message)
+                        ? response.message.message
+                        : 'Failed to save filter preset';
                     frappe.show_alert({
-                        message: response.message?.message || 'Failed to save filter preset',
+                        message: errorMessage,
                         indicator: 'red'
                     });
                 }
@@ -500,11 +537,15 @@ class AdvancedTicketFilter {
                 method: 'on_desk.api.get_filter_presets'
             });
 
-            if (response.message && response.message.success) {
-                this.renderFilterPresets(response.message.presets);
+            if (response && response.message && response.message.success) {
+                this.renderFilterPresets(response.message.presets || []);
+            } else {
+                console.warn('Invalid response from get_filter_presets:', response);
+                this.renderFilterPresets([]);
             }
         } catch (error) {
             console.error('Error loading filter presets:', error);
+            this.renderFilterPresets([]);
         }
     }
 
@@ -562,33 +603,43 @@ class AdvancedTicketFilter {
                 }
             });
 
-            if (response.message) {
+            if (response && response.message) {
                 const preset = response.message;
 
                 // Parse and apply filters
-                const filters = JSON.parse(preset.filters || '{}');
+                let filters = {};
+                try {
+                    filters = JSON.parse(preset.filters || '{}');
+                } catch (e) {
+                    console.warn('Failed to parse preset filters:', e);
+                    filters = {};
+                }
 
                 // Reset all filters first
                 this.clearAllFilters();
 
-                // Apply preset filters
-                if (filters.status) this.statusFilter.value = filters.status;
-                if (filters.priority) this.priorityFilter.value = filters.priority;
-                if (filters.agent_group) this.teamFilter.value = filters.agent_group;
-                if (filters.ticket_type) this.typeFilter.value = filters.ticket_type;
-                if (filters.customer) this.customerFilter.value = filters.customer;
-                if (filters.assigned_agent) this.agentFilter.value = filters.assigned_agent;
+                // Apply preset filters with null checks
+                if (filters.status && this.statusFilter) this.statusFilter.value = filters.status;
+                if (filters.priority && this.priorityFilter) this.priorityFilter.value = filters.priority;
+                if (filters.agent_group && this.teamFilter) this.teamFilter.value = filters.agent_group;
+                if (filters.ticket_type && this.typeFilter) this.typeFilter.value = filters.ticket_type;
+                if (filters.customer && this.customerFilter) this.customerFilter.value = filters.customer;
+                if (filters.assigned_agent && this.agentFilter) this.agentFilter.value = filters.assigned_agent;
 
                 // Apply date range
                 if (filters.date_range) {
-                    if (filters.date_range.from_date) this.fromDateFilter.value = filters.date_range.from_date;
-                    if (filters.date_range.to_date) this.toDateFilter.value = filters.date_range.to_date;
+                    if (filters.date_range.from_date && this.fromDateFilter) {
+                        this.fromDateFilter.value = filters.date_range.from_date;
+                    }
+                    if (filters.date_range.to_date && this.toDateFilter) {
+                        this.toDateFilter.value = filters.date_range.to_date;
+                    }
                 }
 
                 // Apply search and sort
-                if (preset.search_text) this.searchInput.value = preset.search_text;
-                if (preset.sort_by) this.sortBy.value = preset.sort_by;
-                if (preset.sort_order) this.sortOrder.value = preset.sort_order;
+                if (preset.search_text && this.searchInput) this.searchInput.value = preset.search_text;
+                if (preset.sort_by && this.sortBy) this.sortBy.value = preset.sort_by;
+                if (preset.sort_order && this.sortOrder) this.sortOrder.value = preset.sort_order;
 
                 // Load tickets with applied preset
                 this.currentPage = 1;
@@ -597,6 +648,11 @@ class AdvancedTicketFilter {
                 frappe.show_alert({
                     message: `Applied filter preset: ${preset.preset_name}`,
                     indicator: 'blue'
+                });
+            } else {
+                frappe.show_alert({
+                    message: 'Failed to load filter preset',
+                    indicator: 'red'
                 });
             }
         } catch (error) {
